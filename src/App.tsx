@@ -1,18 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Home from "./pages/Home";
+import Home from "./pages/Arquivos";
+import Arquivos from "./pages/Arquivos";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* rota inicial redireciona direto para a home */}
-        <Route path="/" element={<Navigate to="/arquivos" replace />} />
-
-        <Route path="/arquivos" element={<Home />} />
-
-        {/* rota curinga: qualquer caminho não encontrado volta para a home */}
-        <Route path="*" element={<Navigate to="/arquivos" replace />} />
+       {/* home real: tela inicial estilo Google Drive */}
+        <Route path="/" element={<Home />} />
+ 
+        {/* listagem completa de arquivos */}
+        <Route path="/arquivos" element={<Arquivos />} />
       </Routes>
     </BrowserRouter>
   );
