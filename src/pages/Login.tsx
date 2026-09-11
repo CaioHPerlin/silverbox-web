@@ -57,7 +57,10 @@ export default function Login() {
           )}
 
           {/* Senha */}
-          <label htmlFor="password" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+          <label
+            htmlFor="password"
+            className="mb-1.5 mt-4 block text-sm text-zinc-300"
+          >
             Senha
           </label>
           <input
@@ -69,11 +72,16 @@ export default function Login() {
             {...register("password", { required: "Informe sua senha." })}
           />
           {errors.password && (
-            <p className="mb-2 text-xs text-red-400">{errors.password.message}</p>
+            <p className="mb-2 text-xs text-red-400">
+              {errors.password.message}
+            </p>
           )}
 
           <div className="mb-4 mt-2 text-right">
-            <Link to="/recuperar-senha" className="text-xs text-[#5C93E6] hover:underline">
+            <Link
+              to="/recuperar-acesso"
+              className="text-xs text-[#5C93E6] hover:underline"
+            >
               Esqueci minha senha
             </Link>
           </div>
@@ -116,7 +124,12 @@ export default function Login() {
 
 function CloudIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 256 256" fill="none" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 256 256"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
       <path
         d="M74 176c-27.6 0-50-22.4-50-50 0-25.9 19.7-47.2 45-49.8C75.6 54.6 96.4 40 120 40c26.9 0 49.5 18.8 55.2 44.1C199.3 86.4 218 106.9 218 132c0 26.5-21.5 48-48 48H74z"
         stroke="currentColor"

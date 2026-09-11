@@ -4,14 +4,16 @@ import Home from "./pages/Home";
 import Arquivos from "./pages/Arquivos";
 import Login from "./pages/Login";
 import Lixeira from "./pages/Lixeira";
+import RecuperarAcesso from "./pages/RecuperarAcesso";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-  
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
+
         <Route path="/arquivos" element={<Arquivos />} />
         <Route path="/lixeira" element={<Lixeira />} />
       </Routes>
