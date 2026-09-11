@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Home from "./pages/Arquivos";
+import Home from "./pages/Home";
 import Arquivos from "./pages/Arquivos";
 import Login from "./pages/Login";
 
