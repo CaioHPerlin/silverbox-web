@@ -94,7 +94,7 @@ function greeting() {
   return "Boa noite";
 }
 
-export default function Inicio() {
+export default function Home() {
   const { register } = useForm<SearchForm>({ defaultValues: { query: "" } });
 
   return (
