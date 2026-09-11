@@ -6,8 +6,8 @@ import Login from "./pages/Login";
 import Lixeira from "./pages/Lixeira";
 
 import RecuperarAcesso from "./pages/RecuperarAcesso";
-
 import Perfil from "./pages/Perfil";
+import NovaSenha from "./pages/NovaSenha";
 import Cadastro from "./pages/Cadastro";
 
 export default function App() {
@@ -17,11 +17,11 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
+        <Route path="/nova-senha" element={<NovaSenha />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/arquivos" element={<Arquivos />} />
         <Route path="/lixeira" element={<Lixeira />} />
         <Route path="/perfil" element={<Perfil />} />
-        
       </Routes>
     </BrowserRouter>
   );
