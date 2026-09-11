@@ -4,7 +4,10 @@ import Home from "./pages/Home";
 import Arquivos from "./pages/Arquivos";
 import Login from "./pages/Login";
 import Lixeira from "./pages/Lixeira";
+
 import RecuperarAcesso from "./pages/RecuperarAcesso";
+
+import Perfil from "./pages/Perfil";
 
 export default function App() {
   return (
@@ -16,6 +19,7 @@ export default function App() {
 
         <Route path="/arquivos" element={<Arquivos />} />
         <Route path="/lixeira" element={<Lixeira />} />
+        <Route path="/perfil" element={<Perfil />} />
       </Routes>
     </BrowserRouter>
   );
