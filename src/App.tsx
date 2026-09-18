@@ -9,6 +9,7 @@ import RecuperarAcesso from "./pages/RecuperarAcesso";
 import Perfil from "./pages/Perfil";
 import NovaSenha from "./pages/NovaSenha";
 import Cadastro from "./pages/Cadastro";
+import Compartilhados from "./pages/Compartilhados";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/arquivos" element={<Arquivos />} />
         <Route path="/lixeira" element={<Lixeira />} />
+        <Route path="/compartilhados" element={<Compartilhados />} />
         <Route path="/perfil" element={<Perfil />} />
       </Routes>
     </BrowserRouter>
