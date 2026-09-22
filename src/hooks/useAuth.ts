@@ -1,12 +1,12 @@
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { authClient } from "../lib/authClient";
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const { data: session, isPending } = authClient.useSession();
 
-  if (!context) {
-    throw new Error("useAuth precisa ser usado dentro de um <AuthProvider>");
-  }
-
-  return context;
+  return {
+    user: session?.user ?? null,
+    isAuthenticated: Boolean(session),
+    loading: isPending,
+    logout: () => authClient.signOut(),
+  };
 }
