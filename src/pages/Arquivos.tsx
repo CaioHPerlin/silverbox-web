@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
 import { FileActionsMenu } from "../components/FileActionsMenu";
 import { ShareModal } from "../components/ShareModal";
+import { RenameModal } from "../components/RenameModal";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -102,6 +103,9 @@ export default function Arquivos() {
   // arquivo atualmente aberto no modal de compartilhamento (null = modal fechado)
   const [sharingFile, setSharingFile] = useState<StoredFile | null>(null);
 
+  // arquivo atualmente aberto no modal de renomear (null = modal fechado)
+  const [renamingFile, setRenamingFile] = useState<StoredFile | null>(null);
+
   const filtered = mockFiles.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
@@ -182,7 +186,7 @@ export default function Arquivos() {
                 <span className="text-sm text-gray-400">{file.date}</span>
                 <FileActionsMenu
                   onShare={() => setSharingFile(file)}
-                  onRename={() => console.log("renomear", file.id)}
+                  onRename={() => setRenamingFile(file)}
                   onDownload={() => console.log("baixar", file.id)}
                   onMove={() => console.log("mover", file.id)}
                   onDelete={() => console.log("excluir", file.id)}
@@ -193,6 +197,14 @@ export default function Arquivos() {
         </div>
 
         <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
+        <RenameModal
+          file={renamingFile}
+          onClose={() => setRenamingFile(null)}
+          onRenamed={(id, newName) => {
+            // por enquanto só loga; depois isso vai atualizar a lista de arquivos
+            console.log("atualizar lista:", id, newName);
+          }}
+        />
       </main>
     </div>
   );
