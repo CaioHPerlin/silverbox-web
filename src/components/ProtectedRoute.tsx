@@ -1,17 +1,21 @@
 import { Navigate, Outlet } from "react-router-dom";
-
-// Por enquanto verifica só se existe um token salvo.
-// Quando o AuthContext existir, troca essa checagem por ele (também
-// permite validar se o token expirou, etc.)
-function isAuthenticated(): boolean {
-  return Boolean(localStorage.getItem("token"));
-}
+import { useAuth } from "../hooks/useAuth";
 
 export default function ProtectedRoute() {
-  if (!isAuthenticated()) {
+  const { isAuthenticated, loading } = useAuth();
+
+  // ainda checando se existe sessão salva no localStorage
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+        <p className="text-sm text-gray-500">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Outlet renderiza a rota filha (a página protegida)
   return <Outlet />;
 }
