@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
 import { FileActionsMenu } from "../components/FileActionsMenu";
+import { ShareModal } from "../components/ShareModal";
+
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
 
@@ -96,6 +99,9 @@ export default function Arquivos() {
   });
   const query = watch("query");
 
+  // arquivo atualmente aberto no modal de compartilhamento (null = modal fechado)
+  const [sharingFile, setSharingFile] = useState<StoredFile | null>(null);
+
   const filtered = mockFiles.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
@@ -152,7 +158,6 @@ export default function Arquivos() {
 
         {/* Lista de arquivos */}
         <div className="border border-white/10 rounded-xl">
-          {" "}
           <div className="grid grid-cols-[1fr_120px_140px_40px] px-4 py-3 text-xs uppercase tracking-wide text-gray-500 border-b border-white/10">
             <span>Nome</span>
             <span>Tamanho</span>
@@ -176,7 +181,7 @@ export default function Arquivos() {
                 <span className="text-sm text-gray-400">{file.size}</span>
                 <span className="text-sm text-gray-400">{file.date}</span>
                 <FileActionsMenu
-                  onShare={() => console.log("compartilhar", file.id)}
+                  onShare={() => setSharingFile(file)}
                   onRename={() => console.log("renomear", file.id)}
                   onDownload={() => console.log("baixar", file.id)}
                   onMove={() => console.log("mover", file.id)}
@@ -186,6 +191,8 @@ export default function Arquivos() {
             ))
           )}
         </div>
+
+        <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
       </main>
     </div>
   );
