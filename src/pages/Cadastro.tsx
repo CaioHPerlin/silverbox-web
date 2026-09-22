@@ -1,135 +1,196 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
-
-interface CadastroForm {
-  nome: string;
-  email: string;
-  senha: string;
-  confirmarSenha: string;
-}
+import { authClient } from "../lib/authClient";
+import type { CadastroFormData } from "../types";
 
 export default function Cadastro() {
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors },
-  } = useForm<CadastroForm>();
+    formState: { errors, isSubmitting },
+  } = useForm<CadastroFormData>();
 
-  const senha = watch("senha");
+  const password = watch("password");
+  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  function onSubmit(data: CadastroForm) {
-    // TODO: chamar a API de cadastro (POST /usuarios) com { nome, email, senha }
-    console.log(data);
+  async function onSubmit(data: CadastroFormData) {
+    setErrorMsg(null);
+    const { error } = await authClient.signUp.email({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) {
+      setErrorMsg("Já existe uma conta com esse e-mail.");
+      return;
+    }
+
+    navigate("/");
+  }
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    setGoogleLoading(false);
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md border border-white/10 rounded-2xl p-8">
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 001-9.9A6 6 0 006 9.1 4 4 0 003 15z" />
-          </svg>
-          <span className="text-xl font-semibold">Minha Nuvem</span>
+    <div className="flex min-h-screen items-center justify-center bg-black px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
+        {/* Logo */}
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
+          <span className="text-lg font-semibold text-white">Minha Nuvem</span>
         </div>
 
         {/* Abas Entrar / Criar Conta */}
-        <div className="flex border-b border-white/10 mb-6">
+        <div className="mb-6 flex border-b border-zinc-700">
           <Link
             to="/login"
-            className="flex-1 text-center pb-3 text-sm text-gray-400 hover:text-gray-300 transition-colors"
+            className="flex-1 pb-2 text-center text-sm text-zinc-400 hover:text-zinc-200"
           >
             Entrar
           </Link>
-          <button className="flex-1 text-center pb-3 text-sm font-medium text-blue-400 border-b-2 border-blue-400 -mb-px">
+          <span className="flex-1 border-b-2 border-[#5C93E6] pb-2 text-center text-sm font-medium text-[#5C93E6]">
             Criar Conta
-          </button>
+          </span>
         </div>
 
-        {/* Cadastro com Google */}
-        <button
-          type="button"
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 hover:bg-gray-100 transition-colors rounded-lg py-2.5 text-sm font-medium mb-6"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.85A11 11 0 0012 23z" />
-            <path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 015.5 12c0-.73.13-1.43.34-2.09V7.06H2.18A11 11 0 001 12c0 1.77.42 3.45 1.18 4.94l3.66-2.85z" />
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 00-9.82 6.06l3.66 2.85C6.71 7.31 9.14 5.38 12 5.38z" />
-          </svg>
-          Crie sua conta com o google
-        </button>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* Nome */}
+          <label htmlFor="name" className="mb-1.5 block text-sm text-zinc-300">
+            Nome
+          </label>
+          <input
+            id="name"
+            type="text"
+            autoComplete="name"
+            placeholder="Digite seu nome..."
+            className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
+            {...register("name", { required: "Informe seu nome." })}
+          />
+          {errors.name && (
+            <p className="mb-2 text-xs text-red-400">{errors.name.message}</p>
+          )}
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm mb-1.5">Nome</label>
-            <input
-              type="text"
-              placeholder="Joao da Silva"
-              {...register("nome", { required: "Informe seu nome" })}
-              className="w-full bg-transparent border border-white/15 rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {errors.nome && <p className="text-xs text-red-400 mt-1">{errors.nome.message}</p>}
-          </div>
+          {/* E-mail */}
+          <label htmlFor="email" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="Digite seu e-mail..."
+            className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
+            {...register("email", {
+              required: "Informe seu e-mail.",
+              pattern: { value: /^\S+@\S+\.\S+$/, message: "E-mail inválido." },
+            })}
+          />
+          {errors.email && (
+            <p className="mb-2 text-xs text-red-400">{errors.email.message}</p>
+          )}
 
-          <div>
-            <label className="block text-sm mb-1.5">E-mail</label>
-            <input
-              type="email"
-              placeholder="nome@exemplo.com"
-              {...register("email", {
-                required: "Informe seu e-mail",
-                pattern: { value: /^\S+@\S+\.\S+$/, message: "E-mail inválido" },
-              })}
-              className="w-full bg-transparent border border-white/15 rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
-          </div>
+          {/* Senha */}
+          <label htmlFor="password" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+            Senha
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Digite sua senha..."
+            className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
+            {...register("password", {
+              required: "Informe uma senha.",
+              minLength: { value: 8, message: "Mínimo de 8 caracteres." },
+            })}
+          />
+          {errors.password && (
+            <p className="mb-2 text-xs text-red-400">{errors.password.message}</p>
+          )}
 
-          <div>
-            <label className="block text-sm mb-1.5">Senha</label>
-            <input
-              type="password"
-              placeholder="********"
-              {...register("senha", {
-                required: "Informe uma senha",
-                minLength: { value: 8, message: "Mínimo de 8 caracteres" },
-              })}
-              className="w-full bg-transparent border border-white/15 rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {errors.senha && <p className="text-xs text-red-400 mt-1">{errors.senha.message}</p>}
-          </div>
+          {/* Confirmar senha */}
+          <label htmlFor="confirmPassword" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+            Confirmar senha
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Confirme sua senha..."
+            className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
+            {...register("confirmPassword", {
+              required: "Confirme sua senha.",
+              validate: (value) => value === password || "As senhas não coincidem.",
+            })}
+          />
+          {errors.confirmPassword && (
+            <p className="mb-2 text-xs text-red-400">{errors.confirmPassword.message}</p>
+          )}
 
-          <div>
-            <label className="block text-sm mb-1.5">Confirmar senha</label>
-            <input
-              type="password"
-              placeholder="nome@exemplo.com"
-              {...register("confirmarSenha", {
-                required: "Confirme sua senha",
-                validate: (value) => value === senha || "As senhas não coincidem",
-              })}
-              className="w-full bg-transparent border border-white/15 rounded-lg px-3.5 py-2.5 text-sm placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {errors.confirmarSenha && (
-              <p className="text-xs text-red-400 mt-1">{errors.confirmarSenha.message}</p>
-            )}
-          </div>
+          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
 
           <button
             type="submit"
-            className="w-full bg-white text-gray-900 hover:bg-gray-100 transition-colors rounded-lg py-2.5 text-sm font-semibold mt-2"
+            disabled={isSubmitting}
+            className="mb-4 mt-3 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Criar conta
+            {isSubmitting ? "Criando conta..." : "Criar conta"}
           </button>
-        </form>
 
-        <p className="text-center text-xs text-gray-500 mt-5">
-          sua conta começa com uma cota padrão de 5GB
-        </p>
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-zinc-700" />
+            <span className="text-xs text-zinc-500">ou</span>
+            <div className="h-px flex-1 bg-zinc-700" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+            className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600 bg-white py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <GoogleIcon className="h-4 w-4" />
+            {googleLoading ? "Conectando..." : "Crie sua conta com o Google"}
+          </button>
+
+          <p className="text-center text-[11px] text-zinc-500">
+            sua conta começa com uma cota padrão de 5GB
+          </p>
+        </form>
       </div>
     </div>
+  );
+}
+
+function CloudIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 256 256" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M74 176c-27.6 0-50-22.4-50-50 0-25.9 19.7-47.2 45-49.8C75.6 54.6 96.4 40 120 40c26.9 0 49.5 18.8 55.2 44.1C199.3 86.4 218 106.9 218 132c0 26.5-21.5 48-48 48H74z"
+        stroke="currentColor"
+        strokeWidth={14}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.28 1.48-1.13 2.73-2.4 3.58v3h3.88c2.27-2.09 3.54-5.17 3.54-8.82z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.88-3c-1.08.72-2.45 1.15-4.05 1.15-3.11 0-5.75-2.1-6.69-4.93H1.3v3.09C3.26 21.3 7.31 24 12 24z" />
+      <path fill="#FBBC05" d="M5.31 14.31A7.2 7.2 0 0 1 4.9 12c0-.8.14-1.58.4-2.31V6.6H1.3A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.3 5.4z" />
+      <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.3 6.6l4 3.09C6.25 6.86 8.89 4.77 12 4.77z" />
+    </svg>
   );
 }

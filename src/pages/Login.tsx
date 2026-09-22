@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { authClient } from "../lib/authClient";
 import type { LoginFormData } from "../types";
 
 export default function Login() {
@@ -9,9 +11,30 @@ export default function Login() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>();
 
-  // TODO: substituir por integração com Better Auth quando o backend estiver pronto
-  function onSubmit(data: LoginFormData) {
-    console.log("login (placeholder, sem integração ainda):", data);
+  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function onSubmit(data: LoginFormData) {
+    setErrorMsg(null);
+    const { error } = await authClient.signIn.email({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) {
+      setErrorMsg("E-mail ou senha incorretos.");
+      return;
+    }
+
+    navigate("/");
+  }
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    // se der certo, o Better Auth redireciona sozinho; se voltar pra cá, libera o botão
+    setGoogleLoading(false);
   }
 
   return (
@@ -77,6 +100,8 @@ export default function Login() {
             </p>
           )}
 
+          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
+
           <div className="mb-4 mt-2 text-right">
             <Link
               to="/recuperar-acesso"
@@ -91,7 +116,7 @@ export default function Login() {
             disabled={isSubmitting}
             className="mb-4 w-full rounded-lg bg-white py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Entrar
+            {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
 
           <div className="mb-4 flex items-center gap-3">
@@ -102,10 +127,12 @@ export default function Login() {
 
           <button
             type="button"
-            className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600 bg-white py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+            className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-600 bg-white py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <GoogleIcon className="h-4 w-4" />
-            Entre com o Google
+            {googleLoading ? "Conectando..." : "Entre com o Google"}
           </button>
 
           <div className="flex items-center gap-3">
