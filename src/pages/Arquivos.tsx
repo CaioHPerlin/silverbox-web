@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { FileActionsMenu } from "../components/FileActionsMenu";
 import { ShareModal } from "../components/ShareModal";
 import { RenameModal } from "../components/RenameModal";
+import { MoveModal } from "../components/MoveModal";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -14,6 +15,7 @@ interface StoredFile {
   type: FileType;
   size: string;
   date: string;
+  folderId: string | null;
 }
 
 interface SearchForm {
@@ -28,6 +30,7 @@ const mockFiles: StoredFile[] = [
     type: "pdf",
     size: "2,1 MB",
     date: "08/09/2026",
+    folderId: null,
   },
   {
     id: "2",
@@ -35,6 +38,7 @@ const mockFiles: StoredFile[] = [
     type: "image",
     size: "540 KB",
     date: "05/09/2026",
+    folderId: null,
   },
   {
     id: "3",
@@ -42,6 +46,7 @@ const mockFiles: StoredFile[] = [
     type: "sheet",
     size: "128 KB",
     date: "01/09/2026",
+    folderId: null,
   },
   {
     id: "4",
@@ -49,6 +54,7 @@ const mockFiles: StoredFile[] = [
     type: "pdf",
     size: "4,8 MB",
     date: "29/08/2026",
+    folderId: null,
   },
   {
     id: "5",
@@ -56,6 +62,7 @@ const mockFiles: StoredFile[] = [
     type: "zip",
     size: "12,3 MB",
     date: "20/08/2026",
+    folderId: null,
   },
   {
     id: "6",
@@ -63,6 +70,7 @@ const mockFiles: StoredFile[] = [
     type: "doc",
     size: "34 KB",
     date: "18/08/2026",
+    folderId: null,
   },
 ];
 
@@ -100,13 +108,20 @@ export default function Arquivos() {
   });
   const query = watch("query");
 
+  // lista de arquivos como estado, para simular atualizações (renomear, mover, excluir etc.)
+  // sem backend ainda — quando a API estiver pronta, isso vira um `useEffect` + `fetch`
+  const [files, setFiles] = useState<StoredFile[]>(mockFiles);
+
   // arquivo atualmente aberto no modal de compartilhamento (null = modal fechado)
   const [sharingFile, setSharingFile] = useState<StoredFile | null>(null);
 
   // arquivo atualmente aberto no modal de renomear (null = modal fechado)
   const [renamingFile, setRenamingFile] = useState<StoredFile | null>(null);
 
-  const filtered = mockFiles.filter((f) =>
+  // arquivo atualmente aberto no modal de mover (null = modal fechado)
+  const [movingFile, setMovingFile] = useState<StoredFile | null>(null);
+
+  const filtered = files.filter((f) =>
     f.name.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -188,7 +203,7 @@ export default function Arquivos() {
                   onShare={() => setSharingFile(file)}
                   onRename={() => setRenamingFile(file)}
                   onDownload={() => console.log("baixar", file.id)}
-                  onMove={() => console.log("mover", file.id)}
+                  onMove={() => setMovingFile(file)}
                   onDelete={() => console.log("excluir", file.id)}
                 />
               </div>
@@ -197,12 +212,26 @@ export default function Arquivos() {
         </div>
 
         <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
+
         <RenameModal
           file={renamingFile}
           onClose={() => setRenamingFile(null)}
           onRenamed={(id, newName) => {
-            // por enquanto só loga; depois isso vai atualizar a lista de arquivos
-            console.log("atualizar lista:", id, newName);
+            // TODO: quando tiver API, trocar isso por um refetch da lista
+            setFiles((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, name: newName } : f)),
+            );
+          }}
+        />
+
+        <MoveModal
+          file={movingFile}
+          onClose={() => setMovingFile(null)}
+          onMoved={(id, folderId) => {
+            // TODO: quando tiver API, trocar isso por um refetch da lista
+            setFiles((prev) =>
+              prev.map((f) => (f.id === id ? { ...f, folderId } : f)),
+            );
           }}
         />
       </main>
