@@ -35,7 +35,7 @@ export default function Cadastro() {
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
-    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin + "/" })
     setGoogleLoading(false);
   }
 

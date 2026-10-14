@@ -32,7 +32,7 @@ export default function Login() {
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
-    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+    await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin + "/" });
     // se der certo, o Better Auth redireciona sozinho; se voltar pra cá, libera o botão
     setGoogleLoading(false);
   }
