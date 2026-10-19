@@ -86,16 +86,17 @@ function FileIcon({ type }: { type: FileType }) {
   };
   return (
     <svg
-      className={`w-5 h-5 ${colors[type]}`}
+      className={`h-5 w-5 shrink-0 ${colors[type]}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
       strokeWidth={1.8}
+      aria-hidden="true"
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a2 2 0 01.707.293l4.414 4.414a2 2 0 01.293.707V19a2 2 0 01-2 2z"
       />
     </svg>
   );
@@ -126,13 +127,16 @@ export default function Arquivos() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white flex">
+    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
 
-      <main className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold">Meus arquivos</h1>
-          <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 transition-colors px-4 py-2 rounded-lg text-sm font-medium">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-xl font-semibold sm:text-2xl">Meus arquivos</h1>
+          <button
+            type="button"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-3 text-sm font-medium transition-colors hover:bg-blue-600 sm:w-auto sm:py-2"
+          >
             <svg
               className="w-4 h-4"
               fill="none"
@@ -150,17 +154,17 @@ export default function Arquivos() {
           </button>
         </div>
 
-        {/* Busca */}
         <form
-          className="relative mb-6 max-w-md"
-          onSubmit={(e) => e.preventDefault()}
+          className="relative mb-6 w-full sm:max-w-md"
+          onSubmit={(event) => event.preventDefault()}
         >
           <svg
-            className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -168,37 +172,42 @@ export default function Arquivos() {
               d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
+
           <input
             {...register("query")}
             placeholder="Buscar arquivo..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            aria-label="Buscar arquivo"
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-3 pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:py-2"
           />
         </form>
 
-        {/* Lista de arquivos */}
-        <div className="border border-white/10 rounded-xl">
-          <div className="grid grid-cols-[1fr_120px_140px_40px] px-4 py-3 text-xs uppercase tracking-wide text-gray-500 border-b border-white/10">
+        {/* Tabela adaptada para telas médias e grandes */}
+        <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:block">
+          <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/10 px-3 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4">
             <span>Nome</span>
             <span>Tamanho</span>
             <span>Enviado em</span>
-            <span></span>
+            <span aria-label="Ações" />
           </div>
+
           {filtered.length === 0 ? (
-            <div className="px-4 py-10 text-center text-gray-500 text-sm">
+            <div className="px-4 py-10 text-center text-sm text-gray-500">
               Nenhum arquivo encontrado.
             </div>
           ) : (
             filtered.map((file) => (
               <div
                 key={file.id}
-                className="grid grid-cols-[1fr_120px_140px_40px] items-center px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 transition-colors"
+                className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/5 px-3 py-3 transition-colors last:border-b-0 hover:bg-white/5 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4"
               >
-                <div className="flex items-center gap-3 truncate">
+                <div className="flex min-w-0 items-center gap-3">
                   <FileIcon type={file.type} />
                   <span className="truncate text-sm">{file.name}</span>
                 </div>
+
                 <span className="text-sm text-gray-400">{file.size}</span>
                 <span className="text-sm text-gray-400">{file.date}</span>
+
                 <FileActionsMenu
                   onShare={() => setSharingFile(file)}
                   onRename={() => setRenamingFile(file)}
@@ -211,15 +220,57 @@ export default function Arquivos() {
           )}
         </div>
 
+        {/* Cartões para celulares */}
+        <div className="space-y-3 sm:hidden">
+          {filtered.length === 0 ? (
+            <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
+              Nenhum arquivo encontrado.
+            </div>
+          ) : (
+            filtered.map((file) => (
+              <article
+                key={file.id}
+                className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <FileIcon type={file.type} />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-medium">
+                      {file.name}
+                    </p>
+
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+                      <span>{file.size}</span>
+                      <span>{file.date}</span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <FileActionsMenu
+                      onShare={() => setSharingFile(file)}
+                      onRename={() => setRenamingFile(file)}
+                      onDownload={() => console.log("baixar", file.id)}
+                      onMove={() => setMovingFile(file)}
+                      onDelete={() => console.log("excluir", file.id)}
+                    />
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
         <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
 
         <RenameModal
           file={renamingFile}
           onClose={() => setRenamingFile(null)}
           onRenamed={(id, newName) => {
-            // TODO: quando tiver API, trocar isso por um refetch da lista
             setFiles((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, name: newName } : f)),
+              prev.map((file) =>
+                file.id === id ? { ...file, name: newName } : file,
+              ),
             );
           }}
         />
@@ -228,9 +279,10 @@ export default function Arquivos() {
           file={movingFile}
           onClose={() => setMovingFile(null)}
           onMoved={(id, folderId) => {
-            // TODO: quando tiver API, trocar isso por um refetch da lista
             setFiles((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, folderId } : f)),
+              prev.map((file) =>
+                file.id === id ? { ...file, folderId } : file,
+              ),
             );
           }}
         />
