@@ -182,7 +182,7 @@ export default function Arquivos() {
         </form>
 
         {/* Tabela adaptada para telas médias e grandes */}
-        <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:block">
+        <div className="hidden overflow-visible rounded-xl border border-white/10 sm:block">
           <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/10 px-3 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4">
             <span>Nome</span>
             <span>Tamanho</span>

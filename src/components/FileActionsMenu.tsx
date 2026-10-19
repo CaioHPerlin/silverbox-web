@@ -25,6 +25,7 @@ export function FileActionsMenu({
   onDelete,
 }: FileActionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(containerRef, () => setIsOpen(false), isOpen);
@@ -39,7 +40,15 @@ export function FileActionsMenu({
     <div ref={containerRef} className="relative inline-block text-left">
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          if (!isOpen) {
+            const rect = containerRef.current?.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - (rect?.bottom ?? 0);
+            setOpenUpward(spaceBelow < 220);
+          }
+
+          setIsOpen((open) => !open);
+        }}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
@@ -50,7 +59,9 @@ export function FileActionsMenu({
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg"
+          className={`absolute right-0 z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg ${
+            openUpward ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
         >
           <MenuItem
             icon={Share2}
