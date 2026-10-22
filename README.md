@@ -1,75 +1,35 @@
-# React + TypeScript + Vite
+# Silverbox Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Rodar local com Docker
 
-Currently, two official plugins are available:
+Com a API já disponível, execute neste repositório:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+docker compose up --build -d --wait
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Web: http://localhost:5173. API padrão: http://localhost:8000. Para subir a API e PostgreSQL, execute `docker compose up --build -d --wait` na pasta `app/` do repositório `silverbox-api`. Nenhum Node, pnpm, Oracle ou Google OAuth é necessário na máquina.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Logs: `docker compose logs -f web`. Parar: `docker compose down`. O web não guarda dados em volumes. A limpeza dos dados da API deve ser feita explicitamente no repositório da API.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Para apontar o contêiner a outra API: `API_URL=https://api.seudominio docker compose up -d --force-recreate`. Não reconstruir a imagem para mudar a origem: `/runtime-config.js` é gerado no início, sem cache. Usar origens HTTP(S), sem caminho ou barra final. Autorizar a origem do web no CORS/Better Auth da API.
 
+## Desenvolvimento
+
+Node 24 e pnpm 11:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm build
+pnpm lint
+pnpm test
 ```
+
+Copiar `.env.example` para `.env` se precisar mudar `VITE_API_URL` no Vite. npm continua suportado: `npm ci`, `npm run dev`, `npm run build`. Os dois lockfiles são versionados e devem ser atualizados juntos. Testes são TypeScript; `pnpm test` usa Docker e porta 5173 livre.
+
+A imagem final serve SPA com Nginx sem root (UID101), healthcheck `/health`, assets imutáveis e configuração de API em runtime. Não publica `.env` no build.
+
+CI/CD e preparação da Oracle: [deploy/README.md](deploy/README.md).
+
+**Estado funcional:** autenticação está conectada ao Better Auth. Telas de gerenciamento de arquivos ainda têm mocks; publicar este web não conclui a integração dessas telas com a API.

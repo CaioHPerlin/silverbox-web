@@ -1,0 +1,20 @@
+name: silverbox-web
+services:
+  web:
+    image: ${IMAGE:?Set the immutable web image}
+    restart: unless-stopped
+    environment:
+      API_URL: https://${API_HOST:?Required}
+    networks: [traefik]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: traefik
+      traefik.http.routers.silverbox-web.rule: Host(`${WEB_HOST:?Required}`)
+      traefik.http.routers.silverbox-web.entrypoints: websecure
+      traefik.http.routers.silverbox-web.tls.certresolver: letsencrypt
+      traefik.http.services.silverbox-web.loadbalancer.server.port: '8080'
+networks:
+  traefik:
+    external: true

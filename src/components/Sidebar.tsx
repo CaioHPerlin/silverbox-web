@@ -153,9 +153,9 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function AccountUsage() {
-  const usedGb = 3.2;
-  const totalGb = 5;
+interface UsageProps { usedGb?: number; totalGb?: number }
+
+function AccountUsage({ usedGb = 3.2, totalGb = 5 }: UsageProps) {
   const usedPercent = Math.min((usedGb / totalGb) * 100, 100);
 
   return (
@@ -187,7 +187,7 @@ function AccountUsage() {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar(usage: UsageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <>
@@ -289,7 +289,7 @@ export default function Sidebar() {
 
         <div className="flex h-[calc(100%-4rem)] flex-col">
           <Navigation onNavigate={() => setMenuOpen(false)} />
-          <AccountUsage />
+          <AccountUsage {...usage} />
         </div>
       </aside>
 
@@ -302,7 +302,7 @@ export default function Sidebar() {
 
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">
           <Navigation />
-          <AccountUsage />
+          <AccountUsage {...usage} />
         </div>
       </aside>
     </>
