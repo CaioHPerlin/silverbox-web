@@ -10,6 +10,7 @@ import Perfil from "./pages/Perfil";
 import NovaSenha from "./pages/NovaSenha";
 import Cadastro from "./pages/Cadastro";
 import Compartilhados from "./pages/Compartilhados";
+import AdminDashboard from "./pages/Admin/DashboardAdmin";
 
 export default function App() {
   return (
@@ -30,6 +31,8 @@ export default function App() {
         <Route path="/perfil" element={<Perfil />} />
         {/*  </Route>*/}
 
+        {/**Rotas de Administrador */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         {/* qualquer rota que não existe */}
         {/*  <Route path="*" element={<NotFound />} />*/}
       </Routes>
