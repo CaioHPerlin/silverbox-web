@@ -11,6 +11,7 @@ import NovaSenha from "./pages/NovaSenha";
 import Cadastro from "./pages/Cadastro";
 import Compartilhados from "./pages/Compartilhados";
 import AdminDashboard from "./pages/Admin/DashboardAdmin";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -21,17 +22,15 @@ export default function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
         <Route path="/nova-senha" element={<NovaSenha />} />
-
         {/* rotas protegidas: só acessa se tiver token salvo, senão volta pro login */}
-        {/* <Route element={<ProtectedRoute />}>*/}
-        <Route path="/" element={<Home />} />
-        <Route path="/arquivos" element={<Arquivos />} />
-        <Route path="/lixeira" element={<Lixeira />} />
-        <Route path="/compartilhados" element={<Compartilhados />} />
-        <Route path="/perfil" element={<Perfil />} />
-        {/*  </Route>*/}
-
-        {/**Rotas de Administrador */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/arquivos" element={<Arquivos />} />
+          <Route path="/lixeira" element={<Lixeira />} />
+          <Route path="/compartilhados" element={<Compartilhados />} />
+          <Route path="/perfil" element={<Perfil />} />
+        </Route>
+        *{/**Rotas de Administrador */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         {/* qualquer rota que não existe */}
         {/*  <Route path="*" element={<NotFound />} />*/}
