@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/Admin/DashboardAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ArquivosAdmin from "./pages/Admin/ArquivosAdmin";
 import UsuariosAdmin from "./pages/Admin/UsuariosAdmin";
+import AuditoriaAdmin from "./pages/Admin/AuditoriaAdmin";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
         <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+        <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
         {/* qualquer rota que não existe */}
         {/*  <Route path="*" element={<NotFound />} />*/}
       </Routes>
