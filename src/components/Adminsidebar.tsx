@@ -54,6 +54,25 @@ function CloudIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 001 1h4v-5a1 1 0 011-1h2a1 1 0 011 1v5h4a1 1 0 001-1v-9"
+      />
+    </svg>
+  );
+}
+
 function FolderIcon() {
   return (
     <svg
@@ -142,7 +161,7 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
       <NavItem
         to="/admin/dashboard"
         label="Dashboard"
-        icon={<FolderIcon />}
+        icon={<HomeIcon />}
         onNavigate={onNavigate}
       />
       <NavItem
