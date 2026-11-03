@@ -23,7 +23,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     let message = `Erro ${response.status}`;
     try {
       const body = await response.json();
-      message = body.message ?? message;
+      message = body.message ?? body.error ?? message;
     } catch {
       // resposta sem corpo JSON, mantém a mensagem padrão
     }
@@ -43,23 +43,22 @@ export const api = {
   put: <T>(path: string, body?: unknown, options?: RequestInit) =>
     request<T>(path, { ...options, method: "PUT", body: body ? JSON.stringify(body) : undefined }),
 
+  patch: <T>(path: string, body?: unknown, options?: RequestInit) =>
+    request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+
   delete: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "DELETE" }),
 
-  upload: async <T>(path: string, file: File): Promise<T> => {
-    const formData = new FormData();
-    formData.append("file", file);
+  // upload cru: bytes no corpo e dados do arquivo em cabeçalhos (sem FormData)
+  upload: <T>(path: string, file: File, folderId?: number): Promise<T> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/octet-stream",
+      "X-File-Name": encodeURIComponent(file.name),
+      "X-File-Size": String(file.size),
+    };
+    if (file.type) headers["X-File-Mime"] = file.type;
+    if (folderId !== undefined) headers["X-Folder-Id"] = String(folderId);
 
-    const response = await fetch(`${API_URL}${path}`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new ApiError(`Erro ${response.status} ao enviar arquivo`, response.status);
-    }
-
-    return response.json();
+    return request<T>(path, { method: "POST", headers, body: file });
   },
 };
 
