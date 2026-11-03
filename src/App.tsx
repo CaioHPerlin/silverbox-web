@@ -10,7 +10,12 @@ import Perfil from "./pages/Perfil";
 import NovaSenha from "./pages/NovaSenha";
 import Cadastro from "./pages/Cadastro";
 import Compartilhados from "./pages/Compartilhados";
+import AdminDashboard from "./pages/Admin/DashboardAdmin";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ArquivosAdmin from "./pages/Admin/ArquivosAdmin";
+import UsuariosAdmin from "./pages/Admin/UsuariosAdmin";
+import AuditoriaAdmin from "./pages/Admin/AuditoriaAdmin";
+import SistemaAdmin from "./pages/Admin/SistemaAdmin";
 
 export default function App() {
   return (
@@ -21,16 +26,20 @@ export default function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
         <Route path="/nova-senha" element={<NovaSenha />} />
-
         {/* rotas protegidas: só acessa se tiver token salvo, senão volta pro login */}
-         <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/arquivos" element={<Arquivos />} />
-        <Route path="/lixeira" element={<Lixeira />} />
-        <Route path="/compartilhados" element={<Compartilhados />} />
-        <Route path="/perfil" element={<Perfil />} />
-          </Route>*
-
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/arquivos" element={<Arquivos />} />
+          <Route path="/lixeira" element={<Lixeira />} />
+          <Route path="/compartilhados" element={<Compartilhados />} />
+          <Route path="/perfil" element={<Perfil />} />
+        </Route>
+        *{/**Rotas de Administrador */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
+        <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+        <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
+        <Route path="/admin/sistema" element={<SistemaAdmin />} />
         {/* qualquer rota que não existe */}
         {/*  <Route path="*" element={<NotFound />} />*/}
       </Routes>
