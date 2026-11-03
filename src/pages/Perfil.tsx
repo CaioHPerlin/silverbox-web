@@ -1,18 +1,13 @@
 import Sidebar from "../components/Sidebar";
+import { useSession } from "../lib/authClient"; 
 
-// ---- Dados de exemplo (substituir pela chamada à API) ----
-const user = {
-  name: "Rafael Borges",
-  email: "rafael.borges@ifms.br",
-  memberSince: "03/09/2026",
-  role: "comum",
-  usedGb: 3.2,
-  totalGb: 5,
-};
+// ---- Uso de armazenamento: continua mock até existir endpoint na API ----
+const storage = { usedGb: 3.2, totalGb: 5 };
 
 function getInitials(name: string) {
   return name
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
@@ -20,6 +15,33 @@ function getInitials(name: string) {
 }
 
 export default function Perfil() {
+  const { data: session, isPending, error } = useSession();
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] text-gray-400">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (error || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] text-gray-400">
+        Não foi possível carregar seus dados.
+      </div>
+    );
+  }
+
+  const user = {
+    name: session.user.name,
+    email: session.user.email,
+    memberSince: new Date(session.user.createdAt).toLocaleDateString("pt-BR"),
+    role: (session.user as { role?: string }).role ?? "comum",
+    usedGb: storage.usedGb,
+    totalGb: storage.totalGb,
+  };
+
   const usedPercent = Math.round((user.usedGb / user.totalGb) * 100);
 
   return (
