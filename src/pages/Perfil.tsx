@@ -46,7 +46,7 @@ export default function Perfil() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
-      <Sidebar usedGb={user.usedGb} totalGb={user.totalGb} />
+      <Sidebar/>
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <h1 className="mb-6 text-xl font-semibold sm:text-2xl">

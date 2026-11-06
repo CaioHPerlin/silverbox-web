@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { EVENTO_COTA } from "../lib/cotaEvents";
 import { consultarCota, type Cota } from "../services/storage";
 
 export function useCota() {
@@ -8,11 +9,15 @@ export function useCota() {
     try {
       setCota(await consultarCota());
     } catch {
-      setCota(null); // mantém a tela funcionando se a cota falhar
+      setCota(null); // a tela continua funcionando se a cota falhar
     }
   }, []);
 
-  useEffect(() => { atualizar(); }, [atualizar]);
+  useEffect(() => {
+    atualizar();
+    window.addEventListener(EVENTO_COTA, atualizar);
+    return () => window.removeEventListener(EVENTO_COTA, atualizar);
+  }, [atualizar]);
 
   return { cota, atualizar };
 }
