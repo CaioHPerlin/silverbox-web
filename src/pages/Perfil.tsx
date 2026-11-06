@@ -1,5 +1,6 @@
 import Sidebar from "../components/Sidebar";
-import { useSession } from "../lib/authClient"; 
+import { useState } from "react";
+import { authClient, useSession } from "../lib/authClient";
 
 // ---- Uso de armazenamento: continua mock até existir endpoint na API ----
 const storage = { usedGb: 3.2, totalGb: 5 };
@@ -16,6 +17,14 @@ function getInitials(name: string) {
 
 export default function Perfil() {
   const { data: session, isPending, error } = useSession();
+
+  //useState para editar nome
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameMessage, setNameMessage] = useState("");
+
+  //useState para editar senha
 
   if (isPending) {
     return (
@@ -41,6 +50,34 @@ export default function Perfil() {
     usedGb: storage.usedGb,
     totalGb: storage.totalGb,
   };
+
+  async function handleUpdateName() {
+    const name = newName.trim();
+
+    if (!name) {
+      setNameMessage("O nome não pode ficar vazio.");
+      return;
+    }
+
+    setSavingName(true);
+    setNameMessage("");
+
+    try {
+      const { error } = await authClient.updateUser({ name });
+
+      if (error) {
+        setNameMessage(error.message || "Não foi possível atualizar o nome.");
+        return;
+      }
+
+      setEditingName(false);
+      setNameMessage("Nome atualizado com sucesso!");
+    } catch {
+      setNameMessage("Erro ao atualizar o nome.");
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   const usedPercent = Math.round((user.usedGb / user.totalGb) * 100);
 
@@ -100,29 +137,71 @@ export default function Perfil() {
           <div className="mb-8 grid grid-cols-1 gap-3 sm:mb-10 sm:grid-cols-2 sm:gap-4">
             <div className="min-w-0 rounded-xl border border-white/10 px-4 py-4 sm:px-5">
               <p className="mb-1 text-xs text-gray-500">Nome</p>
-              <div className="flex items-center justify-between gap-3">
-                <span className="break-words text-base">{user.name}</span>
-                <button
-                  aria-label="Editar nome"
-                  className="shrink-0 text-gray-500 transition-colors hover:text-white"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
 
+              {editingName ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+                    placeholder="Digite seu novo nome"
+                  />
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleUpdateName}
+                      disabled={savingName}
+                      className="rounded-lg bg-blue-500 px-3 py-2 text-xs font-medium transition-colors hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {savingName ? "Salvando..." : "Salvar"}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditingName(false);
+                        setNameMessage("");
+                      }}
+                      className="rounded-lg border border-white/15 px-3 py-2 text-xs transition-colors hover:bg-white/5"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="break-words text-base">{user.name}</span>
+
+                  <button
+                    aria-label="Editar nome"
+                    onClick={() => {
+                      setNewName(user.name);
+                      setEditingName(true);
+                      setNameMessage("");
+                    }}
+                    className="shrink-0 text-gray-500 transition-colors hover:text-white"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {nameMessage && (
+                <p className="mt-2 text-xs text-gray-400">{nameMessage}</p>
+              )}
+            </div>
             <div className="min-w-0 rounded-xl border border-white/10 px-4 py-4 sm:px-5">
               <p className="mb-1 text-xs text-gray-500">E-mail</p>
               <span className="break-all text-base">{user.email}</span>
