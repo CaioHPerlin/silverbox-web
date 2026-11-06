@@ -26,3 +26,8 @@ export async function renomearPasta(id: number, name: string) {
 export function excluirPasta(id: number) {
   return api.delete<void>(`/folders/${id}`); // 409 se tiver conteúdo
 }
+
+export async function moverPasta(id: number, parentFolderId: number | null) {
+  const { folder } = await api.patch<{ folder: PastaApi }>(`/folders/${id}`, { parentFolderId });
+  return folder; // 409 se mover para dentro dela mesma ou de uma subpasta
+}

@@ -2,6 +2,9 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useCota } from "../hooks/useCota";
+import { formatBytes } from "../lib/format";
+import type { Cota } from "../services/storage";
 
 interface NavItemProps {
   to: string;
@@ -154,23 +157,22 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-interface UsageProps {
-  usedGb?: number;
-  totalGb?: number;
-}
-
-function AccountUsage({ usedGb = 3.2, totalGb = 5 }: UsageProps) {
-  const usedPercent = Math.min((usedGb / totalGb) * 100, 100);
+function AccountUsage({ cota }: { cota: Cota | null }) {
+  const usedPercent = cota
+    ? Math.min((cota.usedBytes / cota.limitBytes) * 100, 100)
+    : 0;
 
   return (
-    <div className="mt-auto rounded-xl border border-white/20 p-4 mb-4">
+    <div className="mt-auto mb-4 rounded-xl border border-white/20 p-4">
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
         Uso da conta
       </p>
 
       <div className="mb-3 flex items-center justify-between gap-2 text-xs">
         <span className="text-gray-300">
-          {usedGb.toFixed(1).replace(".", ",")} GB de {totalGb} GB usados
+          {cota
+            ? `${formatBytes(cota.usedBytes)} de ${formatBytes(cota.limitBytes)} usados`
+            : "Carregando..."}
         </span>
       </div>
 
@@ -178,7 +180,7 @@ function AccountUsage({ usedGb = 3.2, totalGb = 5 }: UsageProps) {
         className="h-2.5 w-full overflow-hidden rounded-full bg-white/10"
         role="progressbar"
         aria-label="Armazenamento utilizado"
-        aria-valuenow={usedPercent}
+        aria-valuenow={Math.round(usedPercent)}
         aria-valuemin={0}
         aria-valuemax={100}
       >
@@ -218,9 +220,10 @@ function LogoutButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export default function Sidebar(usage: UsageProps) {
+export default function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
+  const { cota } = useCota();
 
   return (
     <>
@@ -322,7 +325,7 @@ export default function Sidebar(usage: UsageProps) {
 
         <div className="flex h-[calc(100%-4rem)] flex-col">
           <Navigation onNavigate={() => setMenuOpen(false)} />
-          <AccountUsage {...usage} />
+          <AccountUsage cota={cota} />
           <div className="mt-2">
             <LogoutButton onClick={logout} />
           </div>
@@ -338,7 +341,7 @@ export default function Sidebar(usage: UsageProps) {
 
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">
           <Navigation />
-          <AccountUsage {...usage} />
+          <AccountUsage cota={cota} />
           <div className="mt-2">
             <LogoutButton onClick={logout} />
           </div>
