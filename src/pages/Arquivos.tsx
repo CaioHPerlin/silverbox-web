@@ -4,10 +4,12 @@ import Sidebar from "../components/Sidebar";
 import { FileActionsMenu } from "../components/FileActionsMenu";
 import { ShareModal } from "../components/ShareModal";
 import { RenameModal } from "../components/RenameModal";
-import { MoveModal } from "../components/MoveModal";
+import { FolderPickerModal } from "../components/FolderPickerModal";
+import { VersionsModal } from "../components/VersionsModal";
 import { useArquivos } from "../hooks/useArquivos";
 import { formatBytes } from "../lib/format";
-import { moverArquivo, urlDownload, type ArquivoApi } from "../services/files";
+import { urlDownload, type ArquivoApi } from "../services/files";
+import { type PastaApi } from "../services/folders";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -47,7 +49,7 @@ function paraTela(a: ArquivoApi): StoredFile {
   };
 }
 
-// ---- Ícone por tipo de arquivo ----
+// ---- Ícones ----
 function FileIcon({ type }: { type: FileType }) {
   const colors: Record<FileType, string> = {
     pdf: "text-red-400",
@@ -107,13 +109,20 @@ export default function Arquivos() {
   const {
     arquivos,
     pastas,
+    total,
+    pagina,
+    setPagina,
+    totalPaginas,
     carregando,
     enviando,
     erro,
     enviar,
     novaPasta,
     renomear,
+    mover,
     lixeira,
+    renomearPasta,
+    moverPasta,
     apagarPasta,
   } = useArquivos(folderId);
 
@@ -122,6 +131,8 @@ export default function Arquivos() {
   const [sharingFile, setSharingFile] = useState<StoredFile | null>(null);
   const [renamingFile, setRenamingFile] = useState<StoredFile | null>(null);
   const [movingFile, setMovingFile] = useState<StoredFile | null>(null);
+  const [movingFolder, setMovingFolder] = useState<PastaApi | null>(null);
+  const [versionsFile, setVersionsFile] = useState<StoredFile | null>(null);
 
   const files = arquivos.map(paraTela);
   const filtered = files.filter((f) =>
@@ -276,17 +287,45 @@ export default function Arquivos() {
                   <FolderIcon />
                   <span className="truncate text-sm">{pasta.name}</span>
                 </button>
-                <button
-                  type="button"
-                  aria-label={`Excluir pasta ${pasta.name}`}
-                  onClick={() => {
-                    if (window.confirm(`Excluir a pasta "${pasta.name}"? Só funciona se estiver vazia.`))
-                      apagarPasta(pasta.id);
-                  }}
-                  className="shrink-0 text-gray-500 transition-colors hover:text-red-400"
-                >
-                  ✕
-                </button>
+
+                <div className="flex shrink-0 items-center gap-2 text-gray-500">
+                  <button
+                    type="button"
+                    aria-label={`Renomear pasta ${pasta.name}`}
+                    onClick={() => {
+                      const nome = window
+                        .prompt("Novo nome da pasta:", pasta.name)
+                        ?.trim();
+                      if (nome && nome !== pasta.name) renomearPasta(pasta.id, nome);
+                    }}
+                    className="transition-colors hover:text-white"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Mover pasta ${pasta.name}`}
+                    onClick={() => setMovingFolder(pasta)}
+                    className="transition-colors hover:text-white"
+                  >
+                    ➜
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Excluir pasta ${pasta.name}`}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Excluir a pasta "${pasta.name}"? Só funciona se estiver vazia.`,
+                        )
+                      )
+                        apagarPasta(pasta.id);
+                    }}
+                    className="transition-colors hover:text-red-400"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -322,6 +361,14 @@ export default function Arquivos() {
                 <div className="flex min-w-0 items-center gap-3">
                   <FileIcon type={file.type} />
                   <span className="truncate text-sm">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setVersionsFile(file)}
+                    className="shrink-0 text-xs text-gray-500 hover:text-white"
+                    aria-label={`Versões de ${file.name}`}
+                  >
+                    Versões
+                  </button>
                 </div>
 
                 <span className="text-sm text-gray-400">{file.size}</span>
@@ -352,6 +399,14 @@ export default function Arquivos() {
 
                   <div className="min-w-0 flex-1">
                     <p className="break-words text-sm font-medium">{file.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => setVersionsFile(file)}
+                      className="mt-1 text-xs text-gray-500 hover:text-white"
+                      aria-label={`Versões de ${file.name}`}
+                    >
+                      Versões
+                    </button>
 
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
                       <span>{file.size}</span>
@@ -374,6 +429,31 @@ export default function Arquivos() {
           </div>
         )}
 
+        {/* Paginação */}
+        {!carregando && total > 0 && totalPaginas > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
+            <button
+              type="button"
+              disabled={pagina <= 1}
+              onClick={() => setPagina(pagina - 1)}
+              className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {pagina} de {totalPaginas}
+            </span>
+            <button
+              type="button"
+              disabled={pagina >= totalPaginas}
+              onClick={() => setPagina(pagina + 1)}
+              className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+            >
+              Próxima
+            </button>
+          </div>
+        )}
+
         <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
 
         <RenameModal
@@ -384,13 +464,32 @@ export default function Arquivos() {
           }}
         />
 
-        <MoveModal
-          file={movingFile}
+        <FolderPickerModal
+          aberto={movingFile !== null}
+          titulo="Mover arquivo para..."
           onClose={() => setMovingFile(null)}
-          onMoved={async (id, destino) => {
-            await moverArquivo(Number(id), destino == null ? null : Number(destino));
-            setCaminho((c) => [...c]); // força nova renderização; veja a nota abaixo
+          onConfirm={(destino) => {
+            if (movingFile) mover(Number(movingFile.id), destino);
           }}
+        />
+
+        <FolderPickerModal
+          aberto={movingFolder !== null}
+          titulo="Mover pasta para..."
+          excluirId={movingFolder?.id}
+          onClose={() => setMovingFolder(null)}
+          onConfirm={(destino) => {
+            if (movingFolder) moverPasta(movingFolder.id, destino);
+          }}
+        />
+
+        <VersionsModal
+          arquivo={
+            versionsFile
+              ? { id: Number(versionsFile.id), name: versionsFile.name }
+              : null
+          }
+          onClose={() => setVersionsFile(null)}
         />
       </main>
     </div>
