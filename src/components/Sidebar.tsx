@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 interface NavItemProps {
   to: string;
@@ -153,7 +154,10 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-interface UsageProps { usedGb?: number; totalGb?: number }
+interface UsageProps {
+  usedGb?: number;
+  totalGb?: number;
+}
 
 function AccountUsage({ usedGb = 3.2, totalGb = 5 }: UsageProps) {
   const usedPercent = Math.min((usedGb / totalGb) * 100, 100);
@@ -187,8 +191,37 @@ function AccountUsage({ usedGb = 3.2, totalGb = 5 }: UsageProps) {
   );
 }
 
+function LogoutButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mb-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+    >
+      <svg
+        className="h-5 w-5 shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5m5 5H3"
+        />
+      </svg>
+
+      <span>Sair</span>
+    </button>
+  );
+}
+
 export default function Sidebar(usage: UsageProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { logout } = useAuth();
+
   return (
     <>
       {/* Menu para celular e tablet */}
@@ -290,6 +323,9 @@ export default function Sidebar(usage: UsageProps) {
         <div className="flex h-[calc(100%-4rem)] flex-col">
           <Navigation onNavigate={() => setMenuOpen(false)} />
           <AccountUsage {...usage} />
+          <div className="mt-2">
+            <LogoutButton onClick={logout} />
+          </div>
         </div>
       </aside>
 
@@ -303,6 +339,9 @@ export default function Sidebar(usage: UsageProps) {
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">
           <Navigation />
           <AccountUsage {...usage} />
+          <div className="mt-2">
+            <LogoutButton onClick={logout} />
+          </div>
         </div>
       </aside>
     </>
