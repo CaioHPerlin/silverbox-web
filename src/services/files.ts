@@ -8,6 +8,7 @@ export type ArquivoApi = {
   sizeBytes: number;
   mimeType: string | null;
   isDeleted: boolean;
+  deletedAt?: string | null; // pode não existir
   createdAt: string;
 };
 
