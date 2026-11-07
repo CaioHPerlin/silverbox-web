@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import type { Cota } from "../services/storage";
+import { FolderPlus, FileUp } from "lucide-react";
 
 interface NavItemProps {
   to: string;
@@ -45,24 +46,6 @@ function HomeIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 10.5L12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6"
-      />
-    </svg>
-  );
-}
-function CloudIcon() {
-  return (
-    <svg
-      className="h-5 w-5 shrink-0 text-blue-400"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 15a4 4 0 004 4h9a5 5 0 001-9.9A6 6 0 006 9.1 4 4 0 003 15z"
       />
     </svg>
   );
@@ -187,31 +170,33 @@ function AccountUsage({ cota }: { cota: Cota | null }) {
     : 0;
 
   return (
-    <div className="mt-auto mb-4 rounded-xl border border-white/20 p-4">
+    <div className="mt-auto mb-2">
+      {" "}
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
         Uso da conta
       </p>
+      <div className="rounded-xl border border-white/20 p-4">
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs">
+          <span className="text-gray-300">
+            {cota
+              ? `${formatBytes(cota.usedBytes)} de ${formatBytes(cota.limitBytes)} usados`
+              : "Carregando..."}
+          </span>
+        </div>
 
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs">
-        <span className="text-gray-300">
-          {cota
-            ? `${formatBytes(cota.usedBytes)} de ${formatBytes(cota.limitBytes)} usados`
-            : "Carregando..."}
-        </span>
-      </div>
-
-      <div
-        className="h-2.5 w-full overflow-hidden rounded-full bg-white/10"
-        role="progressbar"
-        aria-label="Armazenamento utilizado"
-        aria-valuenow={Math.round(usedPercent)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
         <div
-          className="h-full rounded-full bg-blue-500 transition-all"
-          style={{ width: `${usedPercent}%` }}
-        />
+          className="h-2.5 w-full overflow-hidden rounded-full bg-white/10"
+          role="progressbar"
+          aria-label="Armazenamento utilizado"
+          aria-valuenow={Math.round(usedPercent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="h-full rounded-full bg-blue-500 transition-all"
+            style={{ width: `${usedPercent}%` }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -244,17 +229,88 @@ function LogoutButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+//Função para abrir +Novo arquivo
+function NewMenu({
+  onAction,
+}: {
+  onAction: (action: "new-folder" | "upload") => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative mt-2 mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 rounded-xl bg-[#30343b] px-4 py-2 font-medium text-white  transition-colors hover:bg-[#3b414a]"
+      >
+        <span className="text-2xl leading-none">+</span>
+        Novo
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#252525] py-2 shadow-xl">
+          <button
+            type="button"
+            onClick={() => {
+              onAction("new-folder");
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/10"
+          >
+            <FolderPlus
+              size={19}
+              strokeWidth={1.8}
+              className="shrink-0 text-gray-300"
+            />
+            Nova pasta
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onAction("upload");
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-200 hover:bg-white/10"
+          >
+            <FileUp
+              size={19}
+              strokeWidth={1.8}
+              className="shrink-0 text-gray-300"
+            />
+            Upload de arquivo
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 export default function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
   const { cota } = useCota();
 
+  const navigate = useNavigate();
+
+  function handleNewAction(action: "new-folder" | "upload") {
+    navigate("/arquivos", {
+      state: { sidebarAction: action },
+    });
+
+    setMenuOpen(false);
+  }
+
   return (
     <>
       {/* Menu para celular e tablet */}
-      <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[#0b1120] px-4 py-3 md:hidden">
+      <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[##1c1c1c] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
-          <CloudIcon />
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Minha Nuvem"
+            className="h-9 w-9 object-contain"
+          />
           <span className="font-semibold text-white">Minha Nuvem</span>
         </div>
 
@@ -306,14 +362,14 @@ export default function Sidebar() {
           type="button"
           aria-label="Fechar menu"
           onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          className="fixed inset-0 z-40 bg-#1c1c1c/60 md:hidden"
         />
       )}
 
       {/* Painel lateral no celular e tablet */}
       <aside
         id="mobile-navigation"
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] border-r border-white/10 bg-[#0b1120] p-4 transition-transform duration-200 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] border-r border-white/10 bg-[#1c1c1c] p-4 transition-transform duration-200 md:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Menu móvel"
@@ -321,7 +377,11 @@ export default function Sidebar() {
       >
         <div className="mb-8 flex items-center justify-between px-2 py-2">
           <div className="flex items-center gap-2">
-            <CloudIcon />
+            <img
+              src="/minha-nuvem-logo.png"
+              alt="Logo Minha Nuvem"
+              className="h-9 w-9 object-contain"
+            />
             <span className="font-semibold text-white">Minha Nuvem</span>
           </div>
           <button
@@ -348,6 +408,7 @@ export default function Sidebar() {
         </div>
 
         <div className="flex h-[calc(100%-4rem)] flex-col">
+          <NewMenu onAction={handleNewAction} />
           <Navigation onNavigate={() => setMenuOpen(false)} />
           <AccountUsage cota={cota} />
           <div className="mt-2">
@@ -357,13 +418,18 @@ export default function Sidebar() {
       </aside>
 
       {/* Sidebar permanente no computador */}
-      <aside className="hidden min-h-screen w-56 shrink-0 border-r border-white/10 p-4 md:block lg:w-64">
+      <aside className="hidden pd-4 min-h-screen w-56 shrink-0 border-r bg-[#1c1c1c] border-white/10 p-4 md:block lg:w-64">
         <div className="mb-6 flex items-center gap-2 px-2 py-2">
-          <CloudIcon />
-          <span className="font-semibold text-white">Minha Nuvem</span>
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Minha Nuvem"
+            className="h-6 w-9 object-contain"
+          />
+          <h1 className="font-medium text-white">Minha Nuvem</h1>
         </div>
 
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">
+          <NewMenu onAction={handleNewAction} />
           <Navigation />
           <AccountUsage cota={cota} />
           <div className="mt-2">

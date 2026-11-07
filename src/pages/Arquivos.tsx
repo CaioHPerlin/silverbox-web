@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
 import { FileActionsMenu } from "../components/FileActionsMenu";
@@ -10,6 +10,8 @@ import { useArquivos } from "../hooks/useArquivos";
 import { formatBytes } from "../lib/format";
 import { urlDownload, type ArquivoApi } from "../services/files";
 import { type PastaApi } from "../services/folders";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FolderPlus, FileUp } from "lucide-react";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -128,6 +130,10 @@ export default function Arquivos() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const acaoProcessada = useRef<string | null>(null);
+
   const [sharingFile, setSharingFile] = useState<StoredFile | null>(null);
   const [renamingFile, setRenamingFile] = useState<StoredFile | null>(null);
   const [movingFile, setMovingFile] = useState<StoredFile | null>(null);
@@ -150,6 +156,32 @@ export default function Arquivos() {
     if (nome) novaPasta(nome);
   }
 
+  useEffect(() => {
+    const state = location.state as {
+      sidebarAction?: "new-folder" | "upload";
+    } | null;
+
+    const action = state?.sidebarAction;
+
+    if (!action || acaoProcessada.current === location.key) return;
+
+    acaoProcessada.current = location.key;
+
+    // Limpa a ação para não repetir quando atualizar a página
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+
+    if (action === "new-folder") {
+      handleNovaPasta();
+    }
+
+    if (action === "upload") {
+      inputRef.current?.click();
+    }
+  }, [location.key, location.pathname, location.state, navigate]);
+
   function handleBaixar(id: string) {
     // o cookie de sessão vai junto; a API responde com attachment
     window.location.href = urlDownload(Number(id));
@@ -171,6 +203,11 @@ export default function Arquivos() {
               onClick={handleNovaPasta}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-4 py-3 text-sm transition-colors hover:bg-white/5 sm:w-auto sm:py-2"
             >
+              <FolderPlus
+                size={19}
+                strokeWidth={1.8}
+                className="shrink-0 text-gray-300"
+              />
               Nova pasta
             </button>
 
@@ -296,7 +333,8 @@ export default function Arquivos() {
                       const nome = window
                         .prompt("Novo nome da pasta:", pasta.name)
                         ?.trim();
-                      if (nome && nome !== pasta.name) renomearPasta(pasta.id, nome);
+                      if (nome && nome !== pasta.name)
+                        renomearPasta(pasta.id, nome);
                     }}
                     className="transition-colors hover:text-white"
                   >
@@ -398,7 +436,9 @@ export default function Arquivos() {
                   <FileIcon type={file.type} />
 
                   <div className="min-w-0 flex-1">
-                    <p className="break-words text-sm font-medium">{file.name}</p>
+                    <p className="break-words text-sm font-medium">
+                      {file.name}
+                    </p>
                     <button
                       type="button"
                       onClick={() => setVersionsFile(file)}
