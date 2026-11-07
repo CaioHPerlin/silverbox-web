@@ -33,7 +33,12 @@ const recentItems: RecentItem[] = [
 ];
 
 const suggestedItems: SuggestedItem[] = [
-  { id: "1", name: "planilha_custos_2026.pdf", type: "pdf", sharedBy: "maria.souza" },
+  {
+    id: "1",
+    name: "planilha_custos_2026.pdf",
+    type: "pdf",
+    sharedBy: "maria.souza",
+  },
 ];
 
 function getInitials(name: string) {
@@ -44,31 +49,75 @@ function getInitials(name: string) {
 function ItemIcon({ type }: { type: ItemType }) {
   if (type === "folder") {
     return (
-      <svg className="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+      <svg
+        className="w-8 h-8 text-blue-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+        />
       </svg>
     );
   }
   if (type === "image") {
     return (
-      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 13l2.5-2.5L13 13l3-3 4 4" />
+      <svg
+        className="w-8 h-8 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 13l2.5-2.5L13 13l3-3 4 4"
+        />
         <circle cx="8.5" cy="8.5" r="1.5" />
       </svg>
     );
   }
   if (type === "sheet") {
     return (
-      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <svg
+        className="w-8 h-8 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
       </svg>
     );
   }
   // pdf
   return (
-    <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    <svg
+      className="w-8 h-8 text-red-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
     </svg>
   );
 }
@@ -81,8 +130,18 @@ function ItemIconSmall({ type }: { type: ItemType }) {
     folder: "text-blue-400",
   };
   return (
-    <svg className={`w-5 h-5 ${colors[type]}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    <svg
+      className={`w-5 h-5 ${colors[type]}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
     </svg>
   );
 }
@@ -98,18 +157,28 @@ export default function Home() {
   const { register } = useForm<SearchForm>({ defaultValues: { query: "" } });
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white flex">
-      <Sidebar usedGb={user.usedGb} totalGb={user.totalGb} />
+    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+      <Sidebar />
 
-      <main className="flex-1 p-8">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         {/* Busca + avatar */}
         <form
           className="flex items-center gap-3 mb-8"
           onSubmit={(e) => e.preventDefault()}
         >
           <div className="relative flex-1">
-            <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               {...register("query")}
@@ -123,19 +192,23 @@ export default function Home() {
         </form>
 
         {/* Saudação */}
-        <h1 className="text-xl font-semibold mb-1">{greeting()}, {user.name}</h1>
+        <h1 className="text-xl font-semibold mb-1">
+          {greeting()}, {user.name}
+        </h1>
         <p className="text-sm text-gray-500 mb-4">Acessados recentemente</p>
 
         {/* Grid de blocos recentes */}
-        <div className="grid grid-cols-4 gap-4 mb-10">
+        <div className="mb-10 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {recentItems.map((item) => (
             <button
               key={item.id}
-              className="flex flex-col items-start gap-4 bg-white/5 border border-white/10 hover:border-white/20 transition-colors rounded-xl p-4 text-left"
+              className="flex w-full min-w-0 flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-white/20"
             >
               <ItemIcon type={item.type} />
               <div>
-                <p className="text-sm font-medium truncate w-full">{item.name}</p>
+                <p className="w-full truncate text-sm font-medium">
+                  {item.name}
+                </p>
                 <p className="text-xs text-gray-500">{item.meta}</p>
               </div>
             </button>
@@ -154,7 +227,9 @@ export default function Home() {
                 <ItemIconSmall type={item.type} />
                 <span className="text-sm">{item.name}</span>
               </div>
-              <span className="text-sm text-gray-500">compartilhado por {item.sharedBy}</span>
+              <span className="text-sm text-gray-500">
+                compartilhado por {item.sharedBy}
+              </span>
             </div>
           ))}
         </div>

@@ -31,6 +31,24 @@ function NavItem({ to, icon, label, onNavigate }: NavItemProps) {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 10.5L12 3l9 7.5M5 9v11h14V9M9 20v-6h6v6"
+      />
+    </svg>
+  );
+}
 function CloudIcon() {
   return (
     <svg
@@ -129,6 +147,12 @@ function UserIcon() {
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label="Navegação principal" className="flex flex-col gap-2">
+      <NavItem
+        to="/"
+        label="Tela Inicial"
+        icon={<HomeIcon />}
+        onNavigate={onNavigate}
+      />
       <NavItem
         to="/arquivos"
         label="Meus arquivos"
