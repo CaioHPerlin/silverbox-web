@@ -1,113 +1,46 @@
 import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
+import { useSession } from "../lib/authClient";
+import { useEffect, useState } from "react";
+import { listarArquivos, type ArquivoApi } from "../services/files";
 
-// ---- Tipos ----
-type ItemType = "pdf" | "image" | "sheet" | "folder";
+type ItemType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
 
 interface RecentItem {
-  id: string;
+  id: number;
   name: string;
   type: ItemType;
-  meta: string; // "aberto há 2h", "12 arquivos", etc.
-}
-
-interface SuggestedItem {
-  id: string;
-  name: string;
-  type: ItemType;
-  sharedBy: string;
+  date: string;
 }
 
 interface SearchForm {
   query: string;
 }
 
-// ---- Dados de exemplo (substituir pela chamada à API) ----
-const user = { name: "Rafael", usedGb: 3.2, totalGb: 5 };
-
-const recentItems: RecentItem[] = [
-  { id: "1", name: "relatorio_v3.pdf", type: "pdf", meta: "aberto há 2h" },
-  { id: "2", name: "grafico.png", type: "image", meta: "aberto ontem" },
-  { id: "3", name: "custos.xlsx", type: "sheet", meta: "aberto ontem" },
-  { id: "4", name: "contratos", type: "folder", meta: "12 arquivos" },
-];
-
-const suggestedItems: SuggestedItem[] = [
-  {
-    id: "1",
-    name: "planilha_custos_2026.pdf",
-    type: "pdf",
-    sharedBy: "maria.souza",
-  },
-];
-
 function getInitials(name: string) {
-  return name.slice(0, 2).toUpperCase();
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
 // ---- Ícone por tipo (SVG inline, sem dependência externa) ----
 function ItemIcon({ type }: { type: ItemType }) {
-  if (type === "folder") {
-    return (
-      <svg
-        className="w-8 h-8 text-blue-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-        />
-      </svg>
-    );
-  }
-  if (type === "image") {
-    return (
-      <svg
-        className="w-8 h-8 text-gray-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8 13l2.5-2.5L13 13l3-3 4 4"
-        />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-      </svg>
-    );
-  }
-  if (type === "sheet") {
-    return (
-      <svg
-        className="w-8 h-8 text-gray-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-    );
-  }
-  // pdf
+  const color =
+    type === "pdf"
+      ? "text-red-400"
+      : type === "image"
+        ? "text-purple-400"
+        : type === "sheet"
+          ? "text-green-400"
+          : "text-gray-400";
+
   return (
     <svg
-      className="w-8 h-8 text-red-400"
+      className={`w-8 h-8 ${color}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -122,30 +55,19 @@ function ItemIcon({ type }: { type: ItemType }) {
   );
 }
 
-function ItemIconSmall({ type }: { type: ItemType }) {
-  const colors: Record<ItemType, string> = {
-    pdf: "text-red-400",
-    image: "text-emerald-400",
-    sheet: "text-green-400",
-    folder: "text-blue-400",
-  };
-  return (
-    <svg
-      className={`w-5 h-5 ${colors[type]}`}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-    </svg>
-  );
+function tipoDoArquivo(nome: string, mime: string | null): ItemType {
+  const ext = nome.split(".").pop()?.toLowerCase() ?? "";
+
+  if (mime?.startsWith("image/")) return "image";
+  if (mime === "application/pdf" || ext === "pdf") return "pdf";
+  if (["doc", "docx", "odt", "txt", "rtf"].includes(ext)) return "doc";
+  if (["xls", "xlsx", "csv", "ods"].includes(ext)) return "sheet";
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "zip";
+
+  return "other";
 }
 
+// Função para verificar hora para Bom dia, Boa tarde e Boa noite
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Bom dia";
@@ -154,8 +76,92 @@ function greeting() {
 }
 
 export default function Home() {
-  const { register } = useForm<SearchForm>({ defaultValues: { query: "" } });
+  const { data: session, isPending } = useSession();
 
+  const [arquivos, setArquivos] = useState<ArquivoApi[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    async function carregarArquivos() {
+      try {
+        const resposta = await listarArquivos(null, 1, 50);
+        setArquivos(resposta.files);
+      } catch {
+        setErro("Não foi possível carregar seus arquivos.");
+      } finally {
+        setCarregando(false);
+      }
+    }
+    carregarArquivos();
+  }, []);
+
+  const { register } = useForm<SearchForm>({
+    defaultValues: { query: "" },
+  });
+
+  if (isPending) return <p className="p-8 text-gray-400">Carregando...</p>;
+
+  if (!session)
+    return <p className="p-8 text-gray-400">Sessão não encontrada.</p>;
+
+  const userName = session.user.name;
+
+  //Ordena arquivos do mais ao menos recente a partir da data de criação e não de alteração ainda
+  const itensRecentes: RecentItem[] = arquivos
+    .filter((arquivo) => !arquivo.isDeleted)
+    .map((arquivo) => ({
+      id: arquivo.id,
+      name: arquivo.originalName,
+      type: tipoDoArquivo(arquivo.originalName, arquivo.mimeType),
+      date: arquivo.createdAt,
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  //Ordena os arquivos por data para serem exibidos
+  function agruparPorData(itens: RecentItem[]) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const inicioSemana = new Date(hoje);
+    const diaSemana = inicioSemana.getDay();
+    inicioSemana.setDate(
+      inicioSemana.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1),
+    );
+
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const inicioAno = new Date(hoje.getFullYear(), 0, 1);
+
+    const grupos: Record<string, RecentItem[]> = {
+      Hoje: [],
+      "Esta semana": [],
+      "Este mês": [],
+      "Este ano": [],
+      "Anos anteriores": [],
+    };
+
+    itens.forEach((item) => {
+      const data = new Date(item.date);
+
+      if (isNaN(data.getTime())) return;
+
+      if (data >= hoje) {
+        grupos["Hoje"].push(item);
+      } else if (data >= inicioSemana) {
+        grupos["Esta semana"].push(item);
+      } else if (data >= inicioMes) {
+        grupos["Este mês"].push(item);
+      } else if (data >= inicioAno) {
+        grupos["Este ano"].push(item);
+      } else {
+        grupos["Anos anteriores"].push(item);
+      }
+    });
+
+    return grupos;
+  }
+
+  const gruposRecentes = agruparPorData(itensRecentes);
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
@@ -186,53 +192,59 @@ export default function Home() {
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-11 pr-3 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
-          <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-semibold text-sm shrink-0">
-            {getInitials(user.name)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-sm font-semibold text-blue-400">
+            {getInitials(userName)}
           </div>
         </form>
 
         {/* Saudação */}
         <h1 className="text-xl font-semibold mb-1">
-          {greeting()}, {user.name}
+          {greeting()}, {userName}!
         </h1>
         <p className="text-sm text-gray-500 mb-4">Acessados recentemente</p>
 
-        {/* Grid de blocos recentes */}
-        <div className="mb-10 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {recentItems.map((item) => (
-            <button
-              key={item.id}
-              className="flex w-full min-w-0 flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-white/20"
-            >
-              <ItemIcon type={item.type} />
-              <div>
-                <p className="w-full truncate text-sm font-medium">
-                  {item.name}
-                </p>
-                <p className="text-xs text-gray-500">{item.meta}</p>
-              </div>
-            </button>
-          ))}
-        </div>
+        {/* Arquivos recentes */}
+        {carregando ? (
+          <p className="text-sm text-gray-500">Carregando arquivos...</p>
+        ) : erro ? (
+          <p className="text-sm text-red-400">{erro}</p>
+        ) : itensRecentes.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Você ainda não possui arquivos.
+          </p>
+        ) : (
+          Object.entries(gruposRecentes).map(
+            ([titulo, itens]) =>
+              itens.length > 0 && (
+                <section key={titulo} className="mb-8">
+                  <h2 className="mb-4 text-sm font-semibold text-gray-300">
+                    {titulo}
+                  </h2>
 
-        {/* Sugeridos */}
-        <p className="text-sm text-gray-400 mb-3">Sugeridos para você</p>
-        <div className="border border-white/10 rounded-xl overflow-hidden">
-          {suggestedItems.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <ItemIconSmall type={item.type} />
-                <span className="text-sm">{item.name}</span>
-              </div>
-              <span className="text-sm text-gray-500">
-                compartilhado por {item.sharedBy}
-              </span>
-            </div>
-          ))}
-        </div>
+                  <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {itens.map((item) => (
+                      <button
+                        key={item.id}
+                        className="flex w-full min-w-0 flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-white/20"
+                      >
+                        <ItemIcon type={item.type} />
+
+                        <div className="w-full min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {item.name}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            {new Date(item.date).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ),
+          )
+        )}
       </main>
     </div>
   );
