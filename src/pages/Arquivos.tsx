@@ -11,7 +11,7 @@ import { formatBytes } from "../lib/format";
 import { urlDownload, type ArquivoApi } from "../services/files";
 import { type PastaApi } from "../services/folders";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FolderPlus, FileUp } from "lucide-react";
+import { FolderPlus } from "lucide-react";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -430,13 +430,13 @@ export default function Arquivos() {
             {filtered.map((file) => (
               <article
                 key={file.id}
-                className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                className="min-w-0 rounded-xl border border-white/10 bg-white p-3"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <FileIcon type={file.type} />
 
                   <div className="min-w-0 flex-1">
-                    <p className="break-words text-sm font-medium">
+                    <p className="wrap-break-words text-sm font-medium">
                       {file.name}
                     </p>
                     <button

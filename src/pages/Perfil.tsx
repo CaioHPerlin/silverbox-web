@@ -18,7 +18,7 @@ function getInitials(name: string) {
 export default function Perfil() {
   const { data: session, isPending, error } = useSession();
 
-  //useState para editar nome
+  //Estados para a edição de nome
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -83,7 +83,7 @@ export default function Perfil() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
-      <Sidebar/>
+      <Sidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <h1 className="mb-6 text-xl font-semibold sm:text-2xl">
@@ -100,7 +100,7 @@ export default function Perfil() {
 
               <div className="min-w-0">
                 <p className="text-lg font-semibold sm:text-xl">{user.name}</p>
-                <p className="break-words text-sm text-gray-500">
+                <p className="wrape-break-words text-sm text-gray-500">
                   {user.email} · membro desde {user.memberSince}
                 </p>
               </div>
@@ -170,7 +170,9 @@ export default function Perfil() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="break-words text-base">{user.name}</span>
+                  <span className="wrap-break-words text-base">
+                    {user.name}
+                  </span>
 
                   <button
                     aria-label="Editar nome"
