@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { formatBytes } from "../lib/format";
 import { mensagemDeErro } from "../services/files";
 import {
   enviarVersao, listarVersoes, restaurarVersao, urlDownloadVersao, type VersaoApi,
 } from "../services/versions";
+
+import { useAsyncData } from "../hooks/useAsyncData";
 
 interface Props {
   arquivo: { id: number; name: string } | null; // null = fechado
@@ -11,28 +13,17 @@ interface Props {
 }
 
 export function VersionsModal({ arquivo, onClose }: Props) {
-  const [versoes, setVersoes] = useState<VersaoApi[]>([]);
-  const [carregando, setCarregando] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const carregar = useCallback(async () => {
-    if (!arquivo) return;
-    setCarregando(true);
-    try {
-      setVersoes(await listarVersoes(arquivo.id));
-      setErro(null);
-    } catch (e) {
-      setErro(mensagemDeErro(e));
-    } finally {
-      setCarregando(false);
-    }
-  }, [arquivo]);
-
-  useEffect(() => { carregar(); }, [carregar]);
-
   if (!arquivo) return null;
+  return <VersionsContent key={arquivo.id} arquivo={arquivo} onClose={onClose} />;
+}
+
+function VersionsContent({ arquivo, onClose }: Props & { arquivo: NonNullable<Props["arquivo"]> }) {
+  const [ocupado, setOcupado] = useState(false);
+  const [erroAcao, setErro] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const carregarVersoes = useCallback(() => listarVersoes(arquivo.id), [arquivo.id]);
+  const { value: versoes, loading: carregando, error, reload: carregar } = useAsyncData<VersaoApi[]>(carregarVersoes, []);
+  const erro = erroAcao ?? (error ? mensagemDeErro(error) : null);
 
   async function acao(fn: () => Promise<unknown>) {
     setOcupado(true);

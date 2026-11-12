@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { listarPastas, type PastaApi } from "../services/folders";
+
+import { useAsyncData } from "../hooks/useAsyncData";
 
 interface Props {
   aberto: boolean;
@@ -9,28 +11,16 @@ interface Props {
   onConfirm: (destino: number | null) => void;
 }
 
-export function FolderPickerModal({ aberto, titulo, excluirId, onClose, onConfirm }: Props) {
+export function FolderPickerModal(props: Props) {
+  if (!props.aberto) return null;
+  return <FolderPickerContent {...props} />;
+}
+
+function FolderPickerContent({ titulo, excluirId, onClose, onConfirm }: Props) {
   const [caminho, setCaminho] = useState<{ id: number; name: string }[]>([]);
-  const [pastas, setPastas] = useState<PastaApi[]>([]);
-  const [carregando, setCarregando] = useState(false);
   const atual = caminho.length > 0 ? caminho[caminho.length - 1].id : null;
-
-  useEffect(() => {
-    if (aberto) setCaminho([]);
-  }, [aberto]);
-
-  useEffect(() => {
-    if (!aberto) return;
-    let cancelado = false;
-    setCarregando(true);
-    listarPastas(atual)
-      .then((p) => !cancelado && setPastas(p))
-      .catch(() => !cancelado && setPastas([]))
-      .finally(() => !cancelado && setCarregando(false));
-    return () => { cancelado = true; };
-  }, [aberto, atual]);
-
-  if (!aberto) return null;
+  const carregar = useCallback(() => listarPastas(atual), [atual]);
+  const { value: pastas, loading: carregando } = useAsyncData<PastaApi[]>(carregar, []);
 
   return (
     <div
