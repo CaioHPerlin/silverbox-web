@@ -13,7 +13,8 @@ export const POR_PAGINA = 20;
 
 export function useArquivos(folderId: number | null) {
   const [enviando, setEnviando] = useState(false);
-  const [erroAcao, setErro] = useState<string | null>(null);
+  const [erroAcao, setErroAcao] = useState<{ folderId: number | null; message: string | null } | null>(null);
+  const setErro = (message: string | null) => setErroAcao({ folderId, message });
 
   // a página volta para 1 sozinha quando troca de pasta
   const [estadoPagina, setEstadoPagina] = useState({ folderId, pagina: 1 });
@@ -30,7 +31,7 @@ export function useArquivos(folderId: number | null) {
   const arquivos: ArquivoApi[] = dados?.lista.files ?? [];
   const pastas: PastaApi[] = dados?.pastas ?? [];
   const total = dados?.lista.total ?? 0;
-  const erro = erroAcao ?? (error ? mensagemDeErro(error) : null);
+  const erro = (erroAcao?.folderId === folderId ? erroAcao.message : null) ?? (error ? mensagemDeErro(error) : null);
   if (!carregando && dados && arquivos.length === 0 && pagina > 1) {
     setEstadoPagina({ folderId, pagina: pagina - 1 });
   }

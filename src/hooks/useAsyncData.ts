@@ -31,7 +31,9 @@ export function useAsyncData<T>(load: () => Promise<T>, initial: T) {
       const value = await load();
       if (active.current === load && id === request.current) setState({ load, value, loading: false });
     } catch (error) {
-      if (active.current === load && id === request.current) setState({ load, error, loading: false });
+      if (active.current === load && id === request.current) {
+        setState(previous => ({ load, value: previous?.load === load ? previous.value : undefined, error, loading: false }));
+      }
     }
   }, [load]);
 
