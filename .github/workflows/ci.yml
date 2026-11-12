@@ -1,20 +1,16 @@
 name: CI
 on:
   push:
-    branches: [main, feature/ci-cd]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: Deploy this revision to Oracle after validation
-        type: boolean
-        default: false
+
 permissions:
   contents: read
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -70,14 +66,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-  deploy:
-    needs: [pnpm, npm]
-    if: >-
-      always() && !cancelled() && needs.pnpm.result == 'success' &&
-      (needs.npm.result == 'success' || needs.npm.result == 'skipped') &&
-      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy))
-    permissions:
-      contents: read
-      packages: write
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
