@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   enviarArquivo, listarArquivos, mensagemDeErro, moverArquivo, moverParaLixeira,
   renomearArquivo, type ArquivoApi,
@@ -7,45 +7,34 @@ import {
   criarPasta, excluirPasta, listarPastas, moverPasta, renomearPasta, type PastaApi,
 } from "../services/folders";
 
+import { useAsyncData } from "./useAsyncData";
+
 export const POR_PAGINA = 20;
 
 export function useArquivos(folderId: number | null) {
-  const [arquivos, setArquivos] = useState<ArquivoApi[]>([]);
-  const [pastas, setPastas] = useState<PastaApi[]>([]);
-  const [total, setTotal] = useState(0);
-  const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erroAcao, setErroAcao] = useState<{ folderId: number | null; message: string | null } | null>(null);
+  const setErro = (message: string | null) => setErroAcao({ folderId, message });
 
   // a página volta para 1 sozinha quando troca de pasta
   const [estadoPagina, setEstadoPagina] = useState({ folderId, pagina: 1 });
   const pagina = estadoPagina.folderId === folderId ? estadoPagina.pagina : 1;
   const setPagina = (p: number) => setEstadoPagina({ folderId, pagina: p });
 
-  const recarregar = useCallback(async () => {
-    setCarregando(true);
-    try {
-      const [lista, subpastas] = await Promise.all([
-        listarArquivos(folderId, pagina, POR_PAGINA),
-        listarPastas(folderId),
-      ]);
-      // apagou o último item da página: volta uma página
-      if (lista.files.length === 0 && pagina > 1) {
-        setEstadoPagina({ folderId, pagina: pagina - 1 });
-        return;
-      }
-      setArquivos(lista.files);
-      setTotal(lista.total);
-      setPastas(subpastas);
-      setErro(null);
-    } catch (e) {
-      setErro(mensagemDeErro(e));
-    } finally {
-      setCarregando(false);
-    }
+  const carregar = useCallback(async () => {
+    const [lista, pastas] = await Promise.all([
+      listarArquivos(folderId, pagina, POR_PAGINA), listarPastas(folderId),
+    ]);
+    return { lista, pastas };
   }, [folderId, pagina]);
-
-  useEffect(() => { recarregar(); }, [recarregar]);
+  const { value: dados, error, loading: carregando, reload: recarregar } = useAsyncData(carregar, null);
+  const arquivos: ArquivoApi[] = dados?.lista.files ?? [];
+  const pastas: PastaApi[] = dados?.pastas ?? [];
+  const total = dados?.lista.total ?? 0;
+  const erro = (erroAcao?.folderId === folderId ? erroAcao.message : null) ?? (error ? mensagemDeErro(error) : null);
+  if (!carregando && dados && arquivos.length === 0 && pagina > 1) {
+    setEstadoPagina({ folderId, pagina: pagina - 1 });
+  }
 
   async function executar(acao: () => Promise<unknown>) {
     try {

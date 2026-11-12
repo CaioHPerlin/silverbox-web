@@ -12,7 +12,7 @@ function compose(...args: string[]) {
 
 test('Docker serves SPA routes, runtime origin and rejects unsafe configuration', { timeout: 660_000 }, async () => {
   try {
-    compose('up', '--build', '-d', '--wait', '--wait-timeout', '60');
+    compose('up', process.env.TEST_IMAGE ? '--no-build' : '--build', '-d', '--wait', '--wait-timeout', '60');
     const base = 'http://127.0.0.1:5173';
     const health = await fetch(`${base}/health`);
     assert.equal(health.status, 200);

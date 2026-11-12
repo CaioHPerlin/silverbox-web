@@ -1,25 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { mensagemDeErro, type ArquivoApi } from "../services/files";
 import { excluirDefinitivamente, listarLixeira, restaurarArquivo } from "../services/trash";
 
+import { useAsyncData } from "./useAsyncData";
+
 export function useLixeira() {
-  const [arquivos, setArquivos] = useState<ArquivoApi[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const recarregar = useCallback(async () => {
-    setCarregando(true);
-    try {
-      setArquivos(await listarLixeira());
-      setErro(null);
-    } catch (e) {
-      setErro(mensagemDeErro(e));
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
-
-  useEffect(() => { recarregar(); }, [recarregar]);
+  const { value: arquivos, loading: carregando, error, reload: recarregar } = useAsyncData<ArquivoApi[]>(listarLixeira, []);
+  const [erroAcao, setErro] = useState<string | null>(null);
+  const erro = erroAcao ?? (error ? mensagemDeErro(error) : null);
 
   async function executar(acao: () => Promise<unknown>) {
     try {
