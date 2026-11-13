@@ -1,9 +1,8 @@
 import Sidebar from "../components/Sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authClient, useSession } from "../lib/authClient";
-
-// ---- Uso de armazenamento: continua mock até existir endpoint na API ----
-const storage = { usedGb: 3.2, totalGb: 5 };
+import { useCota } from "../hooks/useCota";
+import { formatBytes } from "../lib/format";
 
 function getInitials(name: string) {
   return name
@@ -18,13 +17,53 @@ function getInitials(name: string) {
 export default function Perfil() {
   const { data: session, isPending, error } = useSession();
 
+  //Estado para cota
+  const { cota } = useCota();
+
   //Estados para a edição de nome
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameMessage, setNameMessage] = useState("");
 
-  //useState para editar senha
+  // Estados da foto de perfil
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState("");
+
+  //Função para inserir foto
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const formatosPermitidos = ["image/jpeg", "image/png", "image/webp"];
+    const tamanhoMaximo = 2 * 1024 * 1024;
+
+    if (!formatosPermitidos.includes(file.type)) {
+      setAvatarError("Formato inválido. Escolha JPEG, PNG ou WebP.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > tamanhoMaximo) {
+      setAvatarError("A imagem deve ter no máximo 2 MiB.");
+      e.target.value = "";
+      return;
+    }
+
+    setAvatarError("");
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   if (isPending) {
     return (
@@ -47,8 +86,6 @@ export default function Perfil() {
     email: session.user.email,
     memberSince: new Date(session.user.createdAt).toLocaleDateString("pt-BR"),
     role: (session.user as { role?: string }).role ?? "comum",
-    usedGb: storage.usedGb,
-    totalGb: storage.totalGb,
   };
 
   async function handleUpdateName() {
@@ -79,7 +116,11 @@ export default function Perfil() {
     }
   }
 
-  const usedPercent = Math.round((user.usedGb / user.totalGb) * 100);
+  //Calculo para percentual da cota
+  const usedPercent =
+    cota && cota.limitBytes > 0
+      ? Math.min(Math.round((cota.usedBytes / cota.limitBytes) * 100), 100)
+      : 0;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
@@ -94,8 +135,16 @@ export default function Perfil() {
           {/* Cabeçalho */}
           <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4 sm:gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-xl font-semibold text-blue-400 sm:h-20 sm:w-20 sm:text-2xl">
-                {getInitials(user.name)}
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-500/20 text-xl font-semibold text-blue-400 sm:h-20 sm:w-20 sm:text-2xl">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="Prévia da foto de perfil"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  getInitials(user.name)
+                )}
               </div>
 
               <div className="min-w-0">
@@ -106,27 +155,64 @@ export default function Perfil() {
               </div>
             </div>
 
-            <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm transition-colors hover:bg-white/5 sm:w-auto sm:py-2.5">
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 9a2 2 0 012-2h1.586a1 1 0 00.707-.293l1.414-1.414A1 1 0 019.414 5h5.172a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 17a4 4 0 100-8 4 4 0 000 8z"
-                />
-              </svg>
-              Trocar foto
-            </button>
+            {/**Botão de trocar foto */}
+            <div className="flex flex-col items-start gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm transition-colors hover:bg-white/5 sm:py-2.5">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 9a2 2 0 012-2h1.586a1 1 0 00.707-.293l1.414-1.414A1 1 0 019.414 5h5.172a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 17a4 4 0 100-8 4 4 0 000 8z"
+                    />
+                  </svg>
+                  Trocar foto
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    onClick={(e) => {
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarFile(null);
+                      setAvatarPreview(null);
+                      setAvatarError("");
+                    }}
+                    className="rounded-lg border border-white/15 px-4 py-3 text-sm text-gray-300 transition-colors hover:bg-white/5 sm:py-2.5"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+              {avatarError && (
+                <p className="text-xs text-red-400">{avatarError}</p>
+              )}
+
+              {avatarFile && (
+                <p className="text-xs text-gray-500">
+                  {avatarFile.name} · {(avatarFile.size / 1024).toFixed(0)} KB
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Dados da conta */}
@@ -209,12 +295,13 @@ export default function Perfil() {
               <span className="break-all text-base">{user.email}</span>
             </div>
 
+            {/** 
             <div className="rounded-xl border border-white/10 px-4 py-4 sm:px-5">
               <p className="mb-1 text-xs text-gray-500">Senha</p>
               <button className="text-base text-blue-400 transition-colors hover:text-blue-300">
                 Alterar senha
               </button>
-            </div>
+            </div>*/}
 
             <div className="rounded-xl border border-white/10 px-4 py-4 sm:px-5">
               <p className="mb-1 text-xs text-gray-500">Papel</p>
@@ -232,10 +319,13 @@ export default function Perfil() {
           <div className="rounded-xl border border-white/10 px-4 py-5 sm:px-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm text-gray-300 sm:text-base">
-                {user.usedGb.toFixed(1).replace(".", ",")} GB de {user.totalGb}{" "}
-                GB usados
+                {cota
+                  ? `${formatBytes(cota.usedBytes)} de ${formatBytes(cota.limitBytes)} usados`
+                  : "Carregando..."}
               </span>
-              <span className="text-lg font-semibold">{usedPercent}%</span>
+              <span className="text-lg font-semibold">
+                {cota ? `${usedPercent}%` : "--"}
+              </span>
             </div>
 
             <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
