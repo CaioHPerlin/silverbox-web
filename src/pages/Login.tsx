@@ -14,6 +14,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const { refetch: refreshSession } = authClient.useSession();
 
   async function onSubmit(data: LoginFormData) {
     setErrorMsg(null);
@@ -27,6 +28,7 @@ export default function Login() {
       return;
     }
 
+    await refreshSession();
     navigate("/");
   }
 
