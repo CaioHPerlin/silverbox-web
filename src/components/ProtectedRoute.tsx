@@ -1,10 +1,12 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { authUrl } from "../lib/authNavigation";
 
 export default function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
-  // ainda checando se existe sessão salva no localStorage
+  // Aguarda a sessão de cookie antes de decidir o redirecionamento.
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
@@ -14,7 +16,7 @@ export default function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={authUrl("login", location.pathname + location.search + location.hash)} replace />;
   }
 
   return <Outlet />;

@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import type { Cota } from "../services/storage";
-import { FolderPlus, FileUp } from "lucide-react";
+import { CreditCard, FolderPlus, FileUp } from "lucide-react";
 
 interface NavItemProps {
   to: string;
@@ -160,6 +160,12 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
         icon={<UserIcon />}
         onNavigate={onNavigate}
       />
+      <NavItem
+        to="/planos"
+        label="Planos"
+        icon={<CreditCard className="h-5 w-5" aria-hidden="true" />}
+        onNavigate={onNavigate}
+      />
     </nav>
   );
 }
@@ -308,10 +314,10 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <img
             src="/minha-nuvem-logo.png"
-            alt="Logo Minha Nuvem"
+            alt="Logo Silverbox"
             className="h-9 w-9 object-contain"
           />
-          <span className="font-semibold text-white">Minha Nuvem</span>
+          <span className="font-semibold text-white">Silverbox</span>
         </div>
 
         <button
@@ -379,10 +385,10 @@ export default function Sidebar() {
           <div className="flex items-center gap-2">
             <img
               src="/minha-nuvem-logo.png"
-              alt="Logo Minha Nuvem"
+              alt="Logo Silverbox"
               className="h-9 w-9 object-contain"
             />
-            <span className="font-semibold text-white">Minha Nuvem</span>
+            <span className="font-semibold text-white">Silverbox</span>
           </div>
           <button
             type="button"
@@ -422,10 +428,10 @@ export default function Sidebar() {
         <div className="mb-6 flex items-center gap-2 px-2 py-2">
           <img
             src="/minha-nuvem-logo.png"
-            alt="Logo Minha Nuvem"
+            alt="Logo Silverbox"
             className="h-6 w-9 object-contain"
           />
-          <h1 className="font-medium text-white">Minha Nuvem</h1>
+          <h1 className="font-medium text-white">Silverbox</h1>
         </div>
 
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">

@@ -7,7 +7,7 @@ export default function NotFound() {
         <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 001-9.9A6 6 0 006 9.1 4 4 0 003 15z" />
         </svg>
-        <span className="text-lg font-semibold">Minha Nuvem</span>
+        <span className="text-lg font-semibold">Silverbox</span>
       </div>
 
       <p className="text-6xl font-bold text-white/10">404</p>

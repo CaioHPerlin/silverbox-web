@@ -188,7 +188,7 @@ export default function Home() {
             </svg>
             <input
               {...register("query")}
-              placeholder="Buscar na minha nuvem"
+              placeholder="Buscar no Silverbox"
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-11 pr-3 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>

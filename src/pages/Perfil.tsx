@@ -1,9 +1,9 @@
 import Sidebar from "../components/Sidebar";
 import { useState } from "react";
 import { authClient, useSession } from "../lib/authClient";
-
-// ---- Uso de armazenamento: continua mock até existir endpoint na API ----
-const storage = { usedGb: 3.2, totalGb: 5 };
+import { Link } from "react-router-dom";
+import { useCota } from "../hooks/useCota";
+import { formatStorage } from "../lib/pricing";
 
 function getInitials(name: string) {
   return name
@@ -17,6 +17,7 @@ function getInitials(name: string) {
 
 export default function Perfil() {
   const { data: session, isPending, error } = useSession();
+  const { cota } = useCota();
 
   //Estados para a edição de nome
   const [editingName, setEditingName] = useState(false);
@@ -47,8 +48,6 @@ export default function Perfil() {
     email: session.user.email,
     memberSince: new Date(session.user.createdAt).toLocaleDateString("pt-BR"),
     role: (session.user as { role?: string }).role ?? "comum",
-    usedGb: storage.usedGb,
-    totalGb: storage.totalGb,
   };
 
   async function handleUpdateName() {
@@ -79,7 +78,9 @@ export default function Perfil() {
     }
   }
 
-  const usedPercent = Math.round((user.usedGb / user.totalGb) * 100);
+  const usedPercent = cota && cota.limitBytes > 0
+    ? Math.min(100, Math.max(0, Math.round((cota.usedBytes / cota.limitBytes) * 100)))
+    : 0;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
@@ -232,18 +233,18 @@ export default function Perfil() {
           <div className="rounded-xl border border-white/10 px-4 py-5 sm:px-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm text-gray-300 sm:text-base">
-                {user.usedGb.toFixed(1).replace(".", ",")} GB de {user.totalGb}{" "}
-                GB usados
+                {cota ? `${formatStorage(cota.usedBytes)} de ${formatStorage(cota.limitBytes)} usados` : "Armazenamento indisponível no momento."}
               </span>
-              <span className="text-lg font-semibold">{usedPercent}%</span>
+              {cota && <span className="text-lg font-semibold">{usedPercent}%</span>}
             </div>
 
-            <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+            {cota && <div className="h-2.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Armazenamento utilizado" aria-valuenow={usedPercent} aria-valuemin={0} aria-valuemax={100}>
               <div
                 className="h-full rounded-full bg-blue-500 transition-all"
                 style={{ width: `${usedPercent}%` }}
               />
-            </div>
+            </div>}
+            <Link to="/planos" className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm text-blue-400 transition hover:bg-white/5">Conhecer os planos</Link>
           </div>
         </div>
       </main>

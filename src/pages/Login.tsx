@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
+import { authUrl, safeReturnTo } from "../lib/authNavigation";
 import type { LoginFormData } from "../types";
 
 export default function Login() {
@@ -12,6 +13,8 @@ export default function Login() {
   } = useForm<LoginFormData>();
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = safeReturnTo(searchParams.get("returnTo"));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { refetch: refreshSession } = authClient.useSession();
@@ -29,14 +32,14 @@ export default function Login() {
     }
 
     await refreshSession();
-    navigate("/");
+    navigate(returnTo, { replace: true });
   }
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: window.location.origin + "/",
+      callbackURL: window.location.origin + returnTo,
     });
     // se der certo, o Better Auth redireciona sozinho; se voltar pra cá, libera o botão
     setGoogleLoading(false);
@@ -46,10 +49,10 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
         {/* Logo */}
-        <div className="mb-6 flex items-center justify-center gap-2">
+        <Link to="/planos" className="mb-6 flex items-center justify-center gap-2" aria-label="Silverbox, ver planos">
           <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
-          <span className="text-lg font-semibold text-white">Minha Nuvem</span>
-        </div>
+          <span className="text-lg font-semibold text-white">Silverbox</span>
+        </Link>
 
         {/* Abas Entrar / Criar Conta */}
         <div className="mb-6 flex border-b border-zinc-700">
@@ -57,7 +60,7 @@ export default function Login() {
             Entrar
           </span>
           <Link
-            to="/cadastro"
+            to={authUrl("cadastro", returnTo)}
             className="flex-1 pb-2 text-center text-sm text-zinc-400 hover:text-zinc-200"
           >
             Criar Conta

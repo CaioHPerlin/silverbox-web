@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-/*import ProtectedRoute from "./components/ProtectedRoute";
-import NotFound from "./pages/NotFound";*/
+import NotFound from "./pages/NotFound";
+import Planos from "./pages/Planos";
 import Home from "./pages/Home";
 import Arquivos from "./pages/Arquivos";
 import Login from "./pages/Login";
@@ -23,11 +23,12 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* rotas públicas */}
+        <Route path="/planos" element={<Planos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-acesso" element={<RecuperarAcesso />} />
         <Route path="/nova-senha" element={<NovaSenha />} />
-        {/* rotas protegidas: só acessa se tiver token salvo, senão volta pro login */}
+        {/* Rotas protegidas pela sessão do Better Auth. */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/arquivos" element={<Arquivos />} />
@@ -35,16 +36,16 @@ export default function App() {
           <Route path="/compartilhados" element={<Compartilhados />} />
           <Route path="/perfil" element={<Perfil />} />
         </Route>
-        *{/**Rotas de Administrador */}
+        {/**Rotas de Administrador */}
         <Route element={<AdminRoute />}>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
-        <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
-        <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
-        <Route path="/admin/sistema" element={<SistemaAdmin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
+          <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+          <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
+          <Route path="/admin/sistema" element={<SistemaAdmin />} />
         </Route>
-       
-        {/*  <Route path="*" element={<NotFound />} />*/}
+        {/* qualquer rota que não existe */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
