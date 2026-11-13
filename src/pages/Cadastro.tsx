@@ -16,6 +16,7 @@ export default function Cadastro() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const { refetch: refreshSession } = authClient.useSession();
 
   async function onSubmit(data: CadastroFormData) {
     setErrorMsg(null);
@@ -30,6 +31,7 @@ export default function Cadastro() {
       return;
     }
 
+    await refreshSession();
     navigate("/");
   }
 
