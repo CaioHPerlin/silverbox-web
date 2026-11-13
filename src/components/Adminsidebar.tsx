@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
+import { signOut, useSession } from "../lib/authClient";
+import { ehAdmin } from "../lib/roles";
 
 interface NavItemProps {
   to: string;
@@ -199,9 +201,11 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
 interface AdminAccountProps {
   name: string;
   email: string;
+  isAdmin: boolean;
+  onLogout: () => void;
 }
 
-function AdminAccount({ name, email }: AdminAccountProps) {
+function AdminAccount({ name, email, isAdmin, onLogout }: AdminAccountProps) {
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -210,28 +214,58 @@ function AdminAccount({ name, email }: AdminAccountProps) {
     .join("");
 
   return (
-    <div className="mt-auto flex items-center gap-3 border-t border-white/10 px-2 py-4">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white">
-        {initials}
+    <div className="mt-auto border-t border-white/10 px-2 py-4">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-semibold text-white">
+          {initials || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm text-gray-200">{name}</p>
+          <p className="truncate text-xs text-gray-500">{email}</p>
+          <p className="text-xs text-gray-500">
+            {isAdmin ? "Admin" : "Usuário"}
+          </p>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="truncate text-sm text-gray-200">{email}</p>
-        <p className="text-xs text-gray-500">Admin</p>
-      </div>
+
+      <button
+        type="button"
+        onClick={onLogout}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+      >
+        <svg
+          className="h-5 w-5 shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5m5 5H3"
+          />
+        </svg>
+        <span>Sair</span>
+      </button>
     </div>
   );
 }
 
-interface AdminSidebarProps {
-  name?: string;
-  email?: string;
-}
-
-export default function AdminSidebar({
-  name = "Roberto Barbosa",
-  email = "roberto@barborsa",
-}: AdminSidebarProps) {
+export default function AdminSidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { data: session } = useSession();
+
+  const name = session?.user.name ?? "";
+  const email = session?.user.email ?? "";
+  const isAdmin = ehAdmin(session?.user.role);
+
+  async function handleLogout() {
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <>
@@ -337,7 +371,12 @@ export default function AdminSidebar({
 
         <div className="flex h-[calc(100%-6rem)] flex-col">
           <Navigation onNavigate={() => setMenuOpen(false)} />
-          <AdminAccount name={name} email={email} />
+          <AdminAccount
+            name={name}
+            email={email}
+            isAdmin={isAdmin}
+            onLogout={handleLogout}
+          />
         </div>
       </aside>
 
@@ -354,7 +393,12 @@ export default function AdminSidebar({
 
         <div className="flex min-h-[calc(100vh-7rem)] flex-col">
           <Navigation />
-          <AdminAccount name={name} email={email} />
+          <AdminAccount
+            name={name}
+            email={email}
+            isAdmin={isAdmin}
+            onLogout={handleLogout}
+          />
         </div>
       </aside>
     </>
