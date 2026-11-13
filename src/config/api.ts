@@ -12,6 +12,6 @@ declare global {
   }
 }
 
-export const API_URL = validateApiOrigin(
+export const API_URL = import.meta.env.DEV ? `${window.location.origin}/__api` : validateApiOrigin(
   window.__SILVERBOX_CONFIG__?.apiUrl ?? import.meta.env.VITE_API_URL ?? "http://localhost:8000",
 );
