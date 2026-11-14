@@ -28,7 +28,7 @@ export const EXPIRACAO_SHARE = {
 // Criar link temporário
 export async function criarLinkCompartilhamento(
   fileId: number,
-  expiresInSeconds = EXPIRACAO_SHARE.UM_DIA,
+  expiresInSeconds: number = EXPIRACAO_SHARE.UM_DIA,
 ): Promise<CriarShareResponse> {
   if (
     !Number.isInteger(expiresInSeconds) ||
