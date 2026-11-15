@@ -165,9 +165,10 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function AccountUsage({ cota }: { cota: Cota | null }) {
-  const usedPercent = cota
-    ? Math.min((cota.usedBytes / cota.limitBytes) * 100, 100)
-    : 0;
+  const usedPercent =
+    cota && cota.limitBytes > 0
+      ? Math.min((cota.usedBytes / cota.limitBytes) * 100, 100)
+      : 0;
 
   return (
     <div className="mt-auto mb-2">
@@ -194,7 +195,9 @@ function AccountUsage({ cota }: { cota: Cota | null }) {
         >
           <div
             className="h-full rounded-full bg-blue-500 transition-all"
-            style={{ width: `${usedPercent}%` }}
+            style={{
+              width: `${usedPercent}%`,
+            }}
           />
         </div>
       </div>

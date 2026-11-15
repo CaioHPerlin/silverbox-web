@@ -119,8 +119,13 @@ export default function Perfil() {
   //Calculo para percentual da cota
   const usedPercent =
     cota && cota.limitBytes > 0
-      ? Math.min(Math.round((cota.usedBytes / cota.limitBytes) * 100), 100)
+      ? Math.min(Math.min((cota.usedBytes / cota.limitBytes) * 100), 100)
       : 0;
+
+  const percentualFormatado = usedPercent.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
@@ -131,7 +136,7 @@ export default function Perfil() {
           Perfil do usuário
         </h1>
 
-        <div className="max-w-5xl">
+        <div className="w-full">
           {/* Cabeçalho */}
           <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4 sm:gap-5">
@@ -324,14 +329,16 @@ export default function Perfil() {
                   : "Carregando..."}
               </span>
               <span className="text-lg font-semibold">
-                {cota ? `${usedPercent}%` : "--"}
+                {cota ? `${percentualFormatado}%` : "--"}
               </span>
             </div>
 
             <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-blue-500 transition-all"
-                style={{ width: `${usedPercent}%` }}
+                style={{
+                  width: `${usedPercent}%`,
+                }}
               />
             </div>
           </div>
