@@ -6,6 +6,8 @@ import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import type { Cota } from "../services/storage";
 import { FolderPlus, FileUp } from "lucide-react";
+import { useUsuario } from "../hooks/useUsuario";
+import { ehAdmin } from "../lib/roles";
 
 interface NavItemProps {
   to: string;
@@ -127,7 +129,13 @@ function UserIcon() {
   );
 }
 
-function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+function Navigation({
+  onNavigate,
+  admin = false,
+}: {
+  onNavigate?: () => void;
+  admin?: boolean;
+}) {
   return (
     <nav aria-label="Navegação principal" className="flex flex-col gap-2">
       <NavItem
@@ -160,6 +168,15 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
         icon={<UserIcon />}
         onNavigate={onNavigate}
       />
+
+      {admin && (
+        <NavItem
+          to="/admin/dashboard"
+          label="Administração"
+          icon={<UserIcon />}
+          onNavigate={onNavigate}
+        />
+      )}
     </nav>
   );
 }
@@ -172,7 +189,6 @@ function AccountUsage({ cota }: { cota: Cota | null }) {
 
   return (
     <div className="mt-auto mb-2">
-      {" "}
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
         Uso da conta
       </p>
@@ -232,7 +248,7 @@ function LogoutButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-//Função para abrir +Novo arquivo
+// Menu "+ Novo" (nova pasta / upload)
 function NewMenu({
   onAction,
 }: {
@@ -245,7 +261,7 @@ function NewMenu({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded-xl bg-[#30343b] px-4 py-2 font-medium text-white  transition-colors hover:bg-[#3b414a]"
+        className="flex w-full items-center gap-2 rounded-xl bg-[#30343b] px-4 py-2 font-medium text-white transition-colors hover:bg-[#3b414a]"
       >
         <span className="text-2xl leading-none">+</span>
         Novo
@@ -289,12 +305,16 @@ function NewMenu({
     </div>
   );
 }
+
 export default function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAuth();
   const { cota } = useCota();
 
   const navigate = useNavigate();
+
+  const { usuario } = useUsuario();
+  const admin = ehAdmin(usuario?.role);
 
   function handleNewAction(action: "new-folder" | "upload") {
     navigate("/arquivos", {
@@ -307,7 +327,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Menu para celular e tablet */}
-      <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[##1c1c1c] px-4 py-3 md:hidden">
+      <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[#1c1c1c] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
           <img
             src="/minha-nuvem-logo.png"
@@ -365,7 +385,7 @@ export default function Sidebar() {
           type="button"
           aria-label="Fechar menu"
           onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 z-40 bg-#1c1c1c/60 md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
         />
       )}
 
@@ -412,7 +432,7 @@ export default function Sidebar() {
 
         <div className="flex h-[calc(100%-4rem)] flex-col">
           <NewMenu onAction={handleNewAction} />
-          <Navigation onNavigate={() => setMenuOpen(false)} />
+          <Navigation admin={admin} onNavigate={() => setMenuOpen(false)} />
           <AccountUsage cota={cota} />
           <div className="mt-2">
             <LogoutButton onClick={logout} />
@@ -421,7 +441,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Sidebar permanente no computador */}
-      <aside className="hidden pd-4 min-h-screen w-56 shrink-0 border-r bg-[#1c1c1c] border-white/10 p-4 md:block lg:w-64">
+      <aside className="hidden min-h-screen w-56 shrink-0 border-r border-white/10 bg-[#1c1c1c] p-4 md:block lg:w-64">
         <div className="mb-6 flex items-center gap-2 px-2 py-2">
           <img
             src="/minha-nuvem-logo.png"
@@ -433,7 +453,7 @@ export default function Sidebar() {
 
         <div className="flex min-h-[calc(100vh-5rem)] flex-col">
           <NewMenu onAction={handleNewAction} />
-          <Navigation />
+          <Navigation admin={admin} />
           <AccountUsage cota={cota} />
           <div className="mt-2">
             <LogoutButton onClick={logout} />
