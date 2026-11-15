@@ -1,5 +1,5 @@
 import { FileText, UserPlus } from "lucide-react";
-import AdminSidebar from "../../components/Adminsidebar";
+import AdminSidebar from "../../components/AdminSidebar";
 
 // ---- Tipos ----
 type Severity = "normal" | "erro";

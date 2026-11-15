@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import AdminSidebar from "../../components/Adminsidebar";
+import AdminSidebar from "../../components/AdminSidebar";
 
 // ---- Dados de exemplo (substituir pela chamada à API com fetch) ----
 const stats = [

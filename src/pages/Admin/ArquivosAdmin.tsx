@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Trash2 } from "lucide-react";
-import AdminSidebar from "../../components/Adminsidebar";
+import AdminSidebar from "../../components/AdminSidebar";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";

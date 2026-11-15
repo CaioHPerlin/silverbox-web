@@ -17,6 +17,7 @@ import UsuariosAdmin from "./pages/Admin/UsuariosAdmin";
 import AuditoriaAdmin from "./pages/Admin/AuditoriaAdmin";
 import SistemaAdmin from "./pages/Admin/SistemaAdmin";
 import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./components/AdminLayout";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
         </Route>
         *{/**Rotas de Administrador */}
         <Route element={<AdminRoute />}>
+        
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
         <Route path="/admin/usuarios" element={<UsuariosAdmin />} />

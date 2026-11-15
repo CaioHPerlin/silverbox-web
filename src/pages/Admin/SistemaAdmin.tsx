@@ -1,4 +1,4 @@
-import AdminSidebar from "../../components/Adminsidebar";
+import AdminSidebar from "../../components/AdminSidebar";
 
 // ---- Tipos ----
 interface Upload {
