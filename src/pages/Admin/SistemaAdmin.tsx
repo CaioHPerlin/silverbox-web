@@ -1,42 +1,10 @@
+import { useCallback, useEffect, useState } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
+import { API_URL } from "../../config/api";
+import { useCota } from "../../hooks/useCota";
+import { formatBytes } from "../../lib/format";
 
-// ---- Tipos ----
-interface Upload {
-  id: string;
-  label: string; // ex.: "20/08"
-  sizeMb: number;
-}
-
-interface Usage {
-  usedGb: number;
-  quotaGb: number;
-  filesCount: number;
-}
-
-// ---- Dados de exemplo (substituir pela chamada à API com fetch) ----
-const mockUsage: Usage = {
-  usedGb: 3.2,
-  quotaGb: 5,
-  filesCount: 128,
-};
-
-const mockUploads: Upload[] = [
-  { id: "1", label: "16/08", sizeMb: 250 },
-  { id: "2", label: "17/08", sizeMb: 370 },
-  { id: "3", label: "18/08", sizeMb: 280 },
-  { id: "4", label: "19/08", sizeMb: 520 },
-  { id: "5", label: "20/08", sizeMb: 290 },
-  { id: "6", label: "21/08", sizeMb: 520 },
-  { id: "7", label: "22/08", sizeMb: 290 },
-];
-
-// ---- Helpers ----
-function formatGb(value: number) {
-  return value.toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
-}
+type EstadoApi = "verificando" | "ok" | "indisponivel" | "inacessivel";
 
 // A barra muda de cor conforme a cota vai acabando
 function progressColor(percent: number) {
@@ -45,16 +13,7 @@ function progressColor(percent: number) {
   return "bg-[#5b93e8]";
 }
 
-// ---- Componentes ----
-function StatCard({
-  label,
-  value,
-  suffix,
-}: {
-  label: string;
-  value: string;
-  suffix?: string;
-}) {
+function StatCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black px-5 py-4">
       <p className="text-xs text-gray-400">{label}</p>
@@ -66,107 +25,123 @@ function StatCard({
   );
 }
 
-export default function AdminSistema() {
-  // Quando tiver API: useState + fetch no useEffect para usage e uploads
-  const usage = mockUsage;
-  const uploads = mockUploads;
+const textoEstado: Record<EstadoApi, { texto: string; cor: string }> = {
+  verificando: { texto: "Verificando...", cor: "text-gray-400" },
+  ok: { texto: "Operacional (banco e armazenamento)", cor: "text-emerald-400" },
+  indisponivel: { texto: "Dependência indisponível (banco ou armazenamento)", cor: "text-red-400" },
+  inacessivel: { texto: "API inacessível", cor: "text-red-400" },
+};
 
-  const percent = Math.round((usage.usedGb / usage.quotaGb) * 100);
-  const freeGb = Math.max(usage.quotaGb - usage.usedGb, 0);
-  const maxSize = Math.max(...uploads.map((u) => u.sizeMb), 1);
+export default function SistemaAdmin() {
+  const { cota, atualizar } = useCota();
+  const [estado, setEstado] = useState<EstadoApi>("verificando");
+  const [verificadoEm, setVerificadoEm] = useState<Date | null>(null);
+
+  const verificar = useCallback(async () => {
+    setEstado("verificando");
+    try {
+      const res = await fetch(`${API_URL}/health/ready`);
+      setEstado(res.ok ? "ok" : "indisponivel");
+    } catch {
+      setEstado("inacessivel");
+    }
+    setVerificadoEm(new Date());
+  }, []);
+
+  useEffect(() => {
+    verificar();
+  }, [verificar]);
+
+  const percent = cota
+    ? Math.min(Math.round((cota.usedBytes / cota.limitBytes) * 100), 100)
+    : 0;
+
+  const estadoAtual = textoEstado[estado];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-        {/* Cabeçalho */}
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold sm:text-2xl">Uso da conta</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Consumo calculado em tempo real a partir dos objetos armazenados
-          </p>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold sm:text-2xl">Sistema</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Estado da API e uso de armazenamento da sua conta
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              verificar();
+              atualizar();
+            }}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:bg-white/5"
+          >
+            Atualizar
+          </button>
         </div>
 
-        <div>
-          {/* ---- Cartões de resumo ---- */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            <StatCard
-              label="Espaço usado"
-              value={`${formatGb(usage.usedGb)} GB`}
-              suffix={`/ ${usage.quotaGb} GB`}
-            />
-            <StatCard
-              label="Espaço livre"
-              value={`${formatGb(freeGb)} GB`}
-              suffix={`/ ${usage.quotaGb} GB`}
-            />
-            <StatCard
-              label="Arquivos"
-              value={usage.filesCount.toLocaleString("pt-BR")}
+        {/* Status da API */}
+        <section className="mb-8 rounded-xl border border-white/10 bg-black px-5 py-4">
+          <p className="text-xs text-gray-400">Status da API</p>
+          <p className={`mt-1 text-sm font-medium ${estadoAtual.cor}`}>
+            {estadoAtual.texto}
+          </p>
+          {verificadoEm && (
+            <p className="mt-1 text-xs text-gray-500">
+              Verificado às {verificadoEm.toLocaleTimeString("pt-BR")}
+            </p>
+          )}
+        </section>
+
+        {/* Uso da conta logada */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <StatCard
+            label="Espaço usado"
+            value={cota ? formatBytes(cota.usedBytes) : "..."}
+            suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
+          />
+          <StatCard
+            label="Espaço livre"
+            value={cota ? formatBytes(cota.availableBytes) : "..."}
+            suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
+          />
+          <StatCard label="Arquivos" value="—" suffix="indisponível" />
+        </div>
+
+        <section className="mt-8">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="text-gray-300">Cota utilizada</span>
+            <span className="text-gray-400">{cota ? `${percent}%` : "..."}</span>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Cota utilizada"
+            className="h-3 w-full overflow-hidden rounded-full bg-gray-200"
+          >
+            <div
+              className={`h-full rounded-full transition-all ${progressColor(percent)}`}
+              style={{ width: `${percent}%` }}
             />
           </div>
+          <p className="mt-2 text-xs text-gray-500">
+            A cota inclui arquivos na lixeira e versões antigas.
+          </p>
+        </section>
 
-          {/* ---- Cota utilizada ---- */}
-          <section className="mt-8">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-gray-300">Cota utilizada</span>
-              <span className="text-gray-400">{percent}%</span>
-            </div>
-            <div
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Cota utilizada"
-              className="h-3 w-full overflow-hidden rounded-full bg-gray-200"
-            >
-              <div
-                className={`h-full rounded-full transition-all ${progressColor(percent)}`}
-                style={{ width: `${Math.min(percent, 100)}%` }}
-              />
-            </div>
-          </section>
-
-          {/* ---- Últimos uploads ---- */}
-          <section className="mt-10">
-            <h2 className="mb-4 text-sm text-gray-300">
-              Uploads dos ultimos 7 dias.
-            </h2>
-
-            {uploads.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                Nenhum upload recente. Os envios aparecem aqui assim que forem
-                feitos.
-              </p>
-            ) : (
-              <div
-                className="flex h-44 items-end gap-3 sm:gap-4"
-                role="img"
-                aria-label="Gráfico de barras com o tamanho dos últimos uploads"
-              >
-                {uploads.map((upload) => (
-                  <div
-                    key={upload.id}
-                    className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
-                  >
-                    <span className="text-xs text-gray-400">
-                      {upload.sizeMb} MB
-                    </span>
-                    <div
-                      className="w-full rounded-t-md bg-[#5b93e8]"
-                      style={{ height: `${(upload.sizeMb / maxSize) * 70}%` }}
-                      title={`${upload.label}: ${upload.sizeMb} MB`}
-                    />
-                    <span className="text-xs text-gray-500">
-                      {upload.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+        {/* Pendências do back */}
+        <section className="mt-10 rounded-xl border border-dashed border-white/15 px-5 py-4">
+          <h2 className="text-sm text-gray-300">Métricas globais (pendentes)</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Total de arquivos, uso do disco do servidor e uploads dos últimos 7
+            dias dependem de um endpoint administrativo que ainda não existe na
+            API.
+          </p>
+        </section>
       </main>
     </div>
   );
