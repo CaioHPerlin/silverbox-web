@@ -85,3 +85,29 @@ export function mensagemErroShare(err: unknown): string {
 
   return "Não foi possível realizar o compartilhamento.";
 }
+// ---- Para a tela Compartilhados (lista global, rota proposta GET /shares) ----
+export type LinkApi = {
+  id: number;
+  fileId: number;
+  fileName: string;
+  sizeBytes: number;
+  mimeType: string | null;
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+};
+
+export type StatusLink = "ativo" | "expirado" | "revogado";
+
+export function statusDoLink(l: {
+  expiresAt: string;
+  revokedAt: string | null;
+}): StatusLink {
+  if (l.revokedAt) return "revogado";
+  return new Date(l.expiresAt).getTime() <= Date.now() ? "expirado" : "ativo";
+}
+
+export async function listarMeusLinks() {
+  const { shares } = await api.get<{ shares: LinkApi[] }>("/shares");
+  return shares;
+}
