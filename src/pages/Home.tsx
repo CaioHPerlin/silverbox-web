@@ -6,6 +6,7 @@ import { FileActionsMenu } from "../components/FileActionsMenu";
 import { ShareModal } from "../components/ShareModal";
 import { RenameModal } from "../components/RenameModal";
 import { FolderPickerModal } from "../components/FolderPickerModal";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
   listarArquivos,
   urlDownload,
@@ -175,7 +176,7 @@ export default function Home() {
     }
   }
 
-  if (isPending) return <p className="p-8 text-gray-400">Carregando...</p>;
+  if (isPending) return <LoadingSkeleton mensagem="Preparando sua nuvem..." />;
 
   if (!session)
     return <p className="p-8 text-gray-400">Sessão não encontrada.</p>;
@@ -285,7 +286,7 @@ export default function Home() {
 
         {/* Arquivos recentes */}
         {carregando ? (
-          <p className="text-sm text-gray-500">Carregando arquivos...</p>
+          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         ) : erro ? (
           <p className="text-sm text-red-400">{erro}</p>
         ) : itensRecentes.length === 0 ? (

@@ -12,6 +12,7 @@ import { urlDownload, type ArquivoApi } from "../services/files";
 import { type PastaApi } from "../services/folders";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FolderPlus } from "lucide-react";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -364,9 +365,7 @@ export default function Arquivos() {
         )}
 
         {carregando && (
-          <div className="px-4 py-10 text-center text-sm text-gray-500">
-            Carregando...
-          </div>
+          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         )}
 
         {itemVazio && (

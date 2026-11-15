@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { authClient, useSession } from "../lib/authClient";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 
 function getInitials(name: string) {
   return name
@@ -66,11 +67,7 @@ export default function Perfil() {
   }, [avatarPreview]);
 
   if (isPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0d0d0d] text-gray-400">
-        Carregando...
-      </div>
-    );
+    return <LoadingSkeleton mensagem="Carregando informações do perfil..." />;
   }
 
   if (error || !session) {
@@ -124,7 +121,7 @@ export default function Perfil() {
 
   const percentualFormatado = usedPercent.toLocaleString("pt-BR", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 3,
+    maximumFractionDigits: 2,
   });
 
   return (

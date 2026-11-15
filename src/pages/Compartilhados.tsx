@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { formatBytes } from "../lib/format";
 import { ApiError } from "../services/apiClient";
 import { mensagemDeErro } from "../services/files";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import {
   listarMeusLinks,
   revogarLinkCompartilhado,
@@ -207,9 +208,7 @@ export default function Compartilhados() {
             </form>
 
             {carregando ? (
-              <p className="py-10 text-center text-sm text-gray-500">
-                Carregando...
-              </p>
+              <LoadingSkeleton mensagem="Carregando compartilhamentos..." />
             ) : filtered.length === 0 ? (
               <p className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
                 Nenhum link encontrado.

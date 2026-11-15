@@ -1,6 +1,7 @@
 import Sidebar from "../components/Sidebar";
 import { useLixeira } from "../hooks/useLixeira";
 import { formatBytes } from "../lib/format";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -109,11 +110,7 @@ export default function Lixeira() {
           </div>
         )}
 
-        {carregando && (
-          <div className="px-4 py-10 text-center text-sm text-gray-500">
-            Carregando...
-          </div>
-        )}
+        {carregando && <LoadingSkeleton mensagem="Carregando sua lixeira..." />}
 
         {!carregando && arquivos.length === 0 && (
           <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">

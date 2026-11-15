@@ -38,14 +38,12 @@ export default function App() {
         </Route>
         *{/**Rotas de Administrador */}
         <Route element={<AdminRoute />}>
-        
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
-        <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
-        <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
-        <Route path="/admin/sistema" element={<SistemaAdmin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
+          <Route path="/admin/usuarios" element={<UsuariosAdmin />} />
+          <Route path="/admin/auditoria" element={<AuditoriaAdmin />} />
+          <Route path="/admin/sistema" element={<SistemaAdmin />} />
         </Route>
-       
         {/*  <Route path="*" element={<NotFound />} />*/}
       </Routes>
     </BrowserRouter>
