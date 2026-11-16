@@ -4,6 +4,7 @@ import AdminSidebar from "../../components/AdminSidebar";
 import { API_URL } from "../../config/api";
 import { formatBytes } from "../../lib/format";
 import { api, ApiError } from "../../services/apiClient";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 
 // ---- Contrato esperado de GET /admin/files ----
 interface AdminFile {
@@ -100,7 +101,10 @@ export default function ArquivosAdmin() {
       if (e instanceof ApiError && e.status === 404) setPendente(true);
       else if (e instanceof ApiError && e.status === 403)
         setErro("Você não tem permissão para ver os arquivos de todos.");
-      else setErro(e instanceof Error ? e.message : "Falha ao carregar os arquivos.");
+      else
+        setErro(
+          e instanceof Error ? e.message : "Falha ao carregar os arquivos.",
+        );
     } finally {
       setCarregando(false);
     }
@@ -196,14 +200,16 @@ export default function ArquivosAdmin() {
 
         {pendente ? (
           <div className="rounded-xl border border-dashed border-white/15 px-5 py-6">
-            <h2 className="text-sm text-gray-300">Listagem global indisponível</h2>
+            <h2 className="text-sm text-gray-300">
+              Listagem global indisponível
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               A API ainda não tem a rota <code>GET /admin/files</code>. Hoje
               cada usuário só enxerga os próprios arquivos.
             </p>
           </div>
         ) : carregando ? (
-          <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
+          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         ) : files.length === 0 ? (
           <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
             Nenhum arquivo encontrado.
@@ -225,13 +231,20 @@ export default function ArquivosAdmin() {
                   className="grid grid-cols-[1fr_160px_100px_120px_80px] items-center border-b border-white/5 px-4 py-3 transition-colors last:border-b-0 hover:bg-white/5"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <FileIcon type={tipoDoArquivo(f.originalName, f.mimeType)} />
+                    <FileIcon
+                      type={tipoDoArquivo(f.originalName, f.mimeType)}
+                    />
                     <span className="truncate text-sm">{f.originalName}</span>
                   </div>
-                  <span className="truncate text-sm text-gray-400" title={f.ownerEmail ?? ""}>
+                  <span
+                    className="truncate text-sm text-gray-400"
+                    title={f.ownerEmail ?? ""}
+                  >
                     {f.ownerName ?? f.ownerEmail ?? "—"}
                   </span>
-                  <span className="text-sm text-gray-400">{formatBytes(f.sizeBytes)}</span>
+                  <span className="text-sm text-gray-400">
+                    {formatBytes(f.sizeBytes)}
+                  </span>
                   <span className="text-sm text-gray-400">
                     {new Date(f.createdAt).toLocaleDateString("pt-BR")}
                   </span>
@@ -251,7 +264,8 @@ export default function ArquivosAdmin() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm">{f.originalName}</p>
                     <p className="text-xs text-gray-500">
-                      {f.ownerName ?? f.ownerEmail ?? "—"} · {formatBytes(f.sizeBytes)} ·{" "}
+                      {f.ownerName ?? f.ownerEmail ?? "—"} ·{" "}
+                      {formatBytes(f.sizeBytes)} ·{" "}
                       {new Date(f.createdAt).toLocaleDateString("pt-BR")}
                     </p>
                   </div>

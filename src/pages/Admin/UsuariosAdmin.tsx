@@ -3,6 +3,7 @@ import { Ban, CheckCircle2, Trash2, UserPlus } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { authClient } from "../../lib/authClient";
 import { useUsuario } from "../../hooks/useUsuario";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 
 // ---- Tipos ----
 type Role = "user" | "admin";
@@ -16,7 +17,10 @@ interface ApiUser {
 }
 
 function papelDe(u: ApiUser): Role {
-  return (u.role ?? "").split(",").map((r) => r.trim()).includes("admin")
+  return (u.role ?? "")
+    .split(",")
+    .map((r) => r.trim())
+    .includes("admin")
     ? "admin"
     : "user";
 }
@@ -108,22 +112,57 @@ function NovoUsuarioModal({
       >
         <h2 className="text-lg font-semibold">Novo usuário</h2>
         {erro && (
-          <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {erro}
           </div>
         )}
-        <input className={campo} placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
-        <input className={campo} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className={campo} type="password" placeholder="Senha (8 a 128 caracteres)" value={senha} onChange={(e) => setSenha(e.target.value)} required />
-        <select className={campo} value={papel} onChange={(e) => setPapel(e.target.value as Role)}>
+        <input
+          className={campo}
+          placeholder="Nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+        />
+        <input
+          className={campo}
+          type="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          className={campo}
+          type="password"
+          placeholder="Senha (8 a 128 caracteres)"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          required
+        />
+        <select
+          className={campo}
+          value={papel}
+          onChange={(e) => setPapel(e.target.value as Role)}
+        >
           <option value="user">Comum</option>
           <option value="admin">Admin</option>
         </select>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+          >
             Cancelar
           </button>
-          <button type="submit" disabled={salvando} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={salvando}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50"
+          >
             {salvando ? "Criando..." : "Criar"}
           </button>
         </div>
@@ -160,7 +199,10 @@ export default function UsuariosAdmin() {
   }, [carregar]);
 
   // executa uma ação do plugin, mostra o erro e recarrega a lista
-  async function executar(id: string, acao: () => Promise<{ error?: { message?: string } | null }>) {
+  async function executar(
+    id: string,
+    acao: () => Promise<{ error?: { message?: string } | null }>,
+  ) {
     setOcupado(id);
     setErro(null);
     const res = await acao();
@@ -170,11 +212,7 @@ export default function UsuariosAdmin() {
   }
 
   function handleExcluir(u: ApiUser) {
-    if (
-      window.confirm(
-        `Excluir ${u.email}? Esta ação não pode ser desfeita.`,
-      )
-    )
+    if (window.confirm(`Excluir ${u.email}? Esta ação não pode ser desfeita.`))
       executar(u.id, () => authClient.admin.removeUser({ userId: u.id }));
   }
 
@@ -188,7 +226,9 @@ export default function UsuariosAdmin() {
 
   function handlePapel(u: ApiUser, novo: Role) {
     if (novo === papelDe(u)) return;
-    executar(u.id, () => authClient.admin.setRole({ userId: u.id, role: novo }));
+    executar(u.id, () =>
+      authClient.admin.setRole({ userId: u.id, role: novo }),
+    );
   }
 
   const colunas = "grid-cols-[1fr_130px_110px_90px]";
@@ -202,10 +242,16 @@ export default function UsuariosAdmin() {
           disabled={eEu || ocupado === u.id}
           onClick={() => handleBloqueio(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
-          aria-label={u.banned ? `Desbloquear ${u.email}` : `Bloquear ${u.email}`}
+          aria-label={
+            u.banned ? `Desbloquear ${u.email}` : `Bloquear ${u.email}`
+          }
           title={u.banned ? "Desbloquear" : "Bloquear"}
         >
-          {u.banned ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+          {u.banned ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : (
+            <Ban className="h-4 w-4" />
+          )}
         </button>
         <button
           type="button"
@@ -259,21 +305,28 @@ export default function UsuariosAdmin() {
         </div>
 
         {erro && (
-          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             {erro}
           </div>
         )}
 
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
           {carregando ? (
-            <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
+            <LoadingSkeleton mensagem="Carregando usuários..." />
           ) : users.length === 0 ? (
-            <p className="py-10 text-center text-sm text-gray-500">Nenhum usuário encontrado.</p>
+            <p className="py-10 text-center text-sm text-gray-500">
+              Nenhum usuário encontrado.
+            </p>
           ) : (
             <>
               {/* Tabela: desktop */}
               <div className="hidden lg:block">
-                <div className={`grid ${colunas} border-b border-white/10 px-2 py-3 text-xs uppercase tracking-wide text-gray-500`}>
+                <div
+                  className={`grid ${colunas} border-b border-white/10 px-2 py-3 text-xs uppercase tracking-wide text-gray-500`}
+                >
                   <span>Usuário</span>
                   <span>Papel</span>
                   <span>Status</span>
@@ -286,10 +339,16 @@ export default function UsuariosAdmin() {
                   >
                     <div className="min-w-0 pr-2">
                       <p className="truncate text-sm">{u.name}</p>
-                      <p className="truncate text-xs text-gray-500">{u.email}</p>
+                      <p className="truncate text-xs text-gray-500">
+                        {u.email}
+                      </p>
                     </div>
-                    <div><SeletorPapel u={u} /></div>
-                    <div><StatusBadge bloqueado={!!u.banned} /></div>
+                    <div>
+                      <SeletorPapel u={u} />
+                    </div>
+                    <div>
+                      <StatusBadge bloqueado={!!u.banned} />
+                    </div>
                     <Acoes u={u} />
                   </div>
                 ))}
@@ -298,11 +357,16 @@ export default function UsuariosAdmin() {
               {/* Cartões: celular e tablet */}
               <div className="flex flex-col gap-2 lg:hidden">
                 {users.map((u) => (
-                  <div key={u.id} className="rounded-xl border border-white/10 px-4 py-3">
+                  <div
+                    key={u.id}
+                    className="rounded-xl border border-white/10 px-4 py-3"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm">{u.name}</p>
-                        <p className="truncate text-xs text-gray-500">{u.email}</p>
+                        <p className="truncate text-xs text-gray-500">
+                          {u.email}
+                        </p>
                       </div>
                       <Acoes u={u} />
                     </div>

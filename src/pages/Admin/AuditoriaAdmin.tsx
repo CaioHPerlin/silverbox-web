@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FileText, Users } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { api, ApiError } from "../../services/apiClient";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 
 // ---- Contrato esperado de GET /admin/audit ----
 interface AuditLog {
@@ -65,7 +66,9 @@ export default function AuditoriaAdmin() {
       } else if (e instanceof ApiError && e.status === 403) {
         setErro("Você não tem permissão para ver a auditoria.");
       } else {
-        setErro(e instanceof Error ? e.message : "Falha ao carregar a auditoria.");
+        setErro(
+          e instanceof Error ? e.message : "Falha ao carregar a auditoria.",
+        );
       }
     } finally {
       setCarregando(false);
@@ -157,7 +160,7 @@ export default function AuditoriaAdmin() {
         ) : (
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
             {carregando ? (
-              <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
+              <LoadingSkeleton mensagem="Carregando dados da auditoria..." />
             ) : logs.length === 0 ? (
               <p className="py-10 text-center text-sm text-gray-500">
                 Nenhum registro de auditoria.
@@ -184,13 +187,17 @@ export default function AuditoriaAdmin() {
                       <span className="truncate text-sm text-gray-300">
                         {log.userEmail ?? "—"}
                       </span>
-                      <span className={`text-sm font-medium ${actionColor(log.outcome)}`}>
+                      <span
+                        className={`text-sm font-medium ${actionColor(log.outcome)}`}
+                      >
                         {log.action}
                       </span>
                       <span className="truncate text-sm text-gray-300">
                         {dataHora(log.createdAt)}
                       </span>
-                      <span className="text-sm text-gray-500">{log.ip ?? "—"}</span>
+                      <span className="text-sm text-gray-500">
+                        {log.ip ?? "—"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -198,7 +205,10 @@ export default function AuditoriaAdmin() {
                 {/* Cartões: celular e tablet */}
                 <div className="flex flex-col gap-2 lg:hidden">
                   {logs.map((log) => (
-                    <div key={log.id} className="rounded-xl border border-white/10 px-4 py-3">
+                    <div
+                      key={log.id}
+                      className="rounded-xl border border-white/10 px-4 py-3"
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <p className="truncate text-sm font-medium">
                           {log.userName ?? "—"}
@@ -207,10 +217,14 @@ export default function AuditoriaAdmin() {
                           {dataHora(log.createdAt)}
                         </span>
                       </div>
-                      <p className={`mt-2 text-sm font-medium ${actionColor(log.outcome)}`}>
+                      <p
+                        className={`mt-2 text-sm font-medium ${actionColor(log.outcome)}`}
+                      >
                         {log.action}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">{log.ip ?? "—"}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {log.ip ?? "—"}
+                      </p>
                     </div>
                   ))}
                 </div>

@@ -3,6 +3,7 @@ import AdminSidebar from "../../components/AdminSidebar";
 import { API_URL } from "../../config/api";
 import { useCota } from "../../hooks/useCota";
 import { formatBytes } from "../../lib/format";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
 
 type EstadoApi = "verificando" | "ok" | "indisponivel" | "inacessivel";
 
@@ -13,7 +14,15 @@ function progressColor(percent: number) {
   return "bg-[#5b93e8]";
 }
 
-function StatCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+function StatCard({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+}) {
   return (
     <div className="rounded-xl border border-white/10 bg-black px-5 py-4">
       <p className="text-xs text-gray-400">{label}</p>
@@ -28,12 +37,15 @@ function StatCard({ label, value, suffix }: { label: string; value: string; suff
 const textoEstado: Record<EstadoApi, { texto: string; cor: string }> = {
   verificando: { texto: "Verificando...", cor: "text-gray-400" },
   ok: { texto: "Operacional (banco e armazenamento)", cor: "text-emerald-400" },
-  indisponivel: { texto: "Dependência indisponível (banco ou armazenamento)", cor: "text-red-400" },
+  indisponivel: {
+    texto: "Dependência indisponível (banco ou armazenamento)",
+    cor: "text-red-400",
+  },
   inacessivel: { texto: "API inacessível", cor: "text-red-400" },
 };
 
 export default function SistemaAdmin() {
-  const { cota, atualizar } = useCota();
+  const { cota, carregandoCota, atualizar } = useCota();
   const [estado, setEstado] = useState<EstadoApi>("verificando");
   const [verificadoEm, setVerificadoEm] = useState<Date | null>(null);
 
@@ -63,85 +75,97 @@ export default function SistemaAdmin() {
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold sm:text-2xl">Sistema</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Estado da API e uso de armazenamento da sua conta
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              verificar();
-              atualizar();
-            }}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:bg-white/5"
-          >
-            Atualizar
-          </button>
-        </div>
+        {(carregandoCota || estado === "verificando") && (
+          <LoadingSkeleton mensagem="Carregando informações do sistema..." />
+        )}
 
-        {/* Status da API */}
-        <section className="mb-8 rounded-xl border border-white/10 bg-black px-5 py-4">
-          <p className="text-xs text-gray-400">Status da API</p>
-          <p className={`mt-1 text-sm font-medium ${estadoAtual.cor}`}>
-            {estadoAtual.texto}
-          </p>
-          {verificadoEm && (
-            <p className="mt-1 text-xs text-gray-500">
-              Verificado às {verificadoEm.toLocaleTimeString("pt-BR")}
-            </p>
-          )}
-        </section>
+        {!carregandoCota && estado !== "verificando" && (
+          <>
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-xl font-semibold sm:text-2xl">Sistema</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Estado da API e uso de armazenamento da sua conta
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  verificar();
+                  atualizar();
+                }}
+                className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:bg-white/5"
+              >
+                Atualizar
+              </button>
+            </div>
 
-        {/* Uso da conta logada */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-          <StatCard
-            label="Espaço usado"
-            value={cota ? formatBytes(cota.usedBytes) : "..."}
-            suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
-          />
-          <StatCard
-            label="Espaço livre"
-            value={cota ? formatBytes(cota.availableBytes) : "..."}
-            suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
-          />
-          <StatCard label="Arquivos" value="—" suffix="indisponível" />
-        </div>
+            {/* Status da API */}
+            <section className="mb-8 rounded-xl border border-white/10 bg-black px-5 py-4">
+              <p className="text-xs text-gray-400">Status da API</p>
+              <p className={`mt-1 text-sm font-medium ${estadoAtual.cor}`}>
+                {estadoAtual.texto}
+              </p>
+              {verificadoEm && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Verificado às {verificadoEm.toLocaleTimeString("pt-BR")}
+                </p>
+              )}
+            </section>
 
-        <section className="mt-8">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-gray-300">Cota utilizada</span>
-            <span className="text-gray-400">{cota ? `${percent}%` : "..."}</span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuenow={percent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Cota utilizada"
-            className="h-3 w-full overflow-hidden rounded-full bg-gray-200"
-          >
-            <div
-              className={`h-full rounded-full transition-all ${progressColor(percent)}`}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-gray-500">
-            A cota inclui arquivos na lixeira e versões antigas.
-          </p>
-        </section>
+            {/* Uso da conta logada */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+              <StatCard
+                label="Espaço usado"
+                value={cota ? formatBytes(cota.usedBytes) : "..."}
+                suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
+              />
+              <StatCard
+                label="Espaço livre"
+                value={cota ? formatBytes(cota.availableBytes) : "..."}
+                suffix={cota ? `/ ${formatBytes(cota.limitBytes)}` : undefined}
+              />
+              <StatCard label="Arquivos" value="—" suffix="indisponível" />
+            </div>
 
-        {/* Pendências do back */}
-        <section className="mt-10 rounded-xl border border-dashed border-white/15 px-5 py-4">
-          <h2 className="text-sm text-gray-300">Métricas globais (pendentes)</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Total de arquivos, uso do disco do servidor e uploads dos últimos 7
-            dias dependem de um endpoint administrativo que ainda não existe na
-            API.
-          </p>
-        </section>
+            <section className="mt-8">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="text-gray-300">Cota utilizada</span>
+                <span className="text-gray-400">
+                  {cota ? `${percent}%` : "..."}
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-valuenow={percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Cota utilizada"
+                className="h-3 w-full overflow-hidden rounded-full bg-gray-200"
+              >
+                <div
+                  className={`h-full rounded-full transition-all ${progressColor(percent)}`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                A cota inclui arquivos na lixeira e versões antigas.
+              </p>
+            </section>
+
+            {/* Pendências do back */}
+            <section className="mt-10 rounded-xl border border-dashed border-white/15 px-5 py-4">
+              <h2 className="text-sm text-gray-300">
+                Métricas globais (pendentes)
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Total de arquivos, uso do disco do servidor e uploads dos
+                últimos 7 dias dependem de um endpoint administrativo que ainda
+                não existe na API.
+              </p>
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

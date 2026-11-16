@@ -7,11 +7,12 @@ export function useCota() {
   const {
     value,
     error,
+    loading,
     reload: atualizar,
   } = useAsyncData<Cota | null>(consultarCota, null);
   useEffect(() => {
     window.addEventListener(EVENTO_COTA, atualizar);
     return () => window.removeEventListener(EVENTO_COTA, atualizar);
   }, [atualizar]);
-  return { cota: error ? null : value, atualizar };
+  return { cota: error ? null : value, carregandoCota: loading, atualizar };
 }
