@@ -423,7 +423,7 @@ export default function Arquivos() {
             {filtered.map((file) => (
               <article
                 key={file.id}
-                className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                className="min-w-0 rounded-xl border border-white/10 bg-white/3 p-3"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <FileIcon type={file.type} />

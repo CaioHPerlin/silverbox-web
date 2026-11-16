@@ -48,7 +48,7 @@ function StatCard({
   return to ? (
     <Link
       to={to}
-      className={`${classes} transition-colors hover:border-white/20 hover:bg-white/[0.06]`}
+      className={`${classes} transition-colors hover:border-white/20 hover:bg-white/6`}
     >
       {conteudo}
     </Link>
@@ -194,7 +194,7 @@ export default function DashboardAdmin() {
 
             <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
               {/* Cota da conta logada */}
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 lg:col-span-2">
+              <div className="rounded-xl border border-white/10 bg-white/3 p-4 lg:col-span-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs uppercase tracking-wide text-gray-500">
                     Minha cota

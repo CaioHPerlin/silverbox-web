@@ -313,7 +313,7 @@ export default function UsuariosAdmin() {
           </div>
         )}
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
+        <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
           {carregando ? (
             <LoadingSkeleton mensagem="Carregando usuários..." />
           ) : users.length === 0 ? (
