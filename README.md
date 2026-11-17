@@ -49,6 +49,8 @@ A imagem final serve SPA com Nginx sem root (UID101), healthcheck `/health`, ass
 
 CI/CD e preparação da Oracle: [deploy/README.md](deploy/README.md).
 
+A página pública de vendas fica em `/`, com acesso também por `/planos`. O painel da conta fica em `/home` e exige login. Login e cadastro sem destino informado retornam para `/home`; links com uma seleção de plano preservam essa seleção.
+
 **Estado funcional:** autenticação está conectada ao Better Auth. Telas de gerenciamento de arquivos ainda têm mocks; publicar este web não conclui a integração dessas telas com a API.
 
 ## Instância Oracle

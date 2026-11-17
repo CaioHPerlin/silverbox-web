@@ -273,7 +273,7 @@ export default function AdminSidebar() {
       <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[#0b1120] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
           <CloudIcon />
-          <span className="font-semibold text-white">Minha Nuvem</span>
+          <span className="font-semibold text-white">Silverbox</span>
         </div>
 
         <button
@@ -340,7 +340,7 @@ export default function AdminSidebar() {
         <div className="mb-4 flex items-center justify-between px-2 py-2">
           <div className="flex items-center gap-2">
             <CloudIcon />
-            <span className="font-semibold text-white">Minha Nuvem</span>
+            <span className="font-semibold text-white">Silverbox</span>
           </div>
           <button
             type="button"
@@ -384,7 +384,7 @@ export default function AdminSidebar() {
       <aside className="hidden min-h-screen w-56 shrink-0 border-r border-white/10 p-4 md:block lg:w-64">
         <div className="mb-4 flex items-center gap-2 px-2 py-2">
           <CloudIcon />
-          <h1 className="font-semibold text-white">Minha Nuvem</h1>
+          <h1 className="font-semibold text-white">Silverbox</h1>
         </div>
 
         <span className="mb-6 inline-block rounded-md bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">

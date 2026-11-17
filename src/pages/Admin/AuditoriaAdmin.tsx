@@ -76,7 +76,9 @@ export default function AuditoriaAdmin() {
   }, [pagina]);
 
   useEffect(() => {
-    carregar();
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return carregar(); });
+    return () => { ativo = false; };
   }, [carregar]);
 
   function handleExport() {

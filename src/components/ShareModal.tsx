@@ -36,7 +36,12 @@ function dataHora(iso: string) {
 }
 
 export function ShareModal({ file, onClose }: Props) {
-  const fileId = file ? Number(file.id) : null;
+  if (!file) return null;
+  return <ShareModalContent key={file.id} file={file} onClose={onClose} />;
+}
+
+function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props["file"]> }) {
+  const fileId = Number(file.id);
 
   const [prazo, setPrazo] = useState<number>(EXPIRACAO_SHARE.UM_DIA);
   const [gerado, setGerado] = useState<{ url: string; expiresAt: string } | null>(null);
@@ -54,17 +59,12 @@ export function ShareModal({ file, onClose }: Props) {
     }
   }, [fileId]);
 
-  // ao abrir (ou trocar de arquivo): limpa o estado e carrega os links existentes
+  // O conteúdo é remontado para cada arquivo; só a consulta precisa de um efeito.
   useEffect(() => {
-    setGerado(null);
-    setCopiado(false);
-    setErro(null);
-    setLinks([]);
-    setPrazo(EXPIRACAO_SHARE.UM_DIA);
-    carregarLinks();
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return carregarLinks(); });
+    return () => { ativo = false; };
   }, [carregarLinks]);
-
-  if (!file || fileId === null) return null;
 
   async function gerar() {
     if (fileId === null) return;

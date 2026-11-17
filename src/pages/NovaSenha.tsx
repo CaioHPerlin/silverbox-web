@@ -24,7 +24,7 @@ export default function NovaSenha() {
         {/* Logo */}
         <div className="mb-6 flex items-center justify-center gap-2">
           <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
-          <span className="text-lg font-semibold text-white">Minha Nuvem</span>
+          <span className="text-lg font-semibold text-white">Silverbox</span>
         </div>
 
         <h1 className="mb-2 text-center text-base font-semibold text-white">

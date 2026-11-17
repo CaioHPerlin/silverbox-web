@@ -111,7 +111,9 @@ export default function ArquivosAdmin() {
   }, [pagina, busca]);
 
   useEffect(() => {
-    carregar();
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return carregar(); });
+    return () => { ativo = false; };
   }, [carregar]);
 
   function handleBaixar(id: number) {

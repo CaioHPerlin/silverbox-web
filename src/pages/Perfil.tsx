@@ -1,6 +1,7 @@
 import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
 import { authClient, useSession } from "../lib/authClient";
+import { Link } from "react-router-dom";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import LoadingSkeleton from "../components/LoadingSkeleton";
@@ -112,7 +113,7 @@ export default function Perfil() {
   //Calculo para percentual da cota
   const usedPercent =
     cota && cota.limitBytes > 0
-      ? Math.min(Math.min((cota.usedBytes / cota.limitBytes) * 100), 100)
+      ? Math.min(100, Math.max(0, (cota.usedBytes / cota.limitBytes) * 100))
       : 0;
 
   const percentualFormatado = usedPercent.toLocaleString("pt-BR", {
@@ -300,7 +301,7 @@ export default function Perfil() {
                   <span className="break-all text-base">{user.email}</span>
                 </div>
 
-                {/** 
+                {/**
             <div className="rounded-xl border border-white/10 px-4 py-4 sm:px-5">
               <p className="mb-1 text-xs text-gray-500">Senha</p>
               <button className="text-base text-blue-400 transition-colors hover:text-blue-300">
@@ -326,21 +327,22 @@ export default function Perfil() {
                   <span className="text-sm text-gray-300 sm:text-base">
                     {cota
                       ? `${formatBytes(cota.usedBytes)} de ${formatBytes(cota.limitBytes)} usados`
-                      : "Carregando..."}
+                      : "Armazenamento indisponível no momento."}
                   </span>
                   <span className="text-lg font-semibold">
                     {cota ? `${percentualFormatado}%` : "--"}
                   </span>
                 </div>
 
-                <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+                {cota && <div className="h-2.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Armazenamento utilizado" aria-valuenow={usedPercent} aria-valuemin={0} aria-valuemax={100}>
                   <div
                     className="h-full rounded-full bg-blue-500 transition-all"
                     style={{
                       width: `${usedPercent}%`,
                     }}
                   />
-                </div>
+                </div>}
+                <Link to="/planos" className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm text-blue-400 transition hover:bg-white/5">Conhecer os planos</Link>
               </div>
             </div>
           </>

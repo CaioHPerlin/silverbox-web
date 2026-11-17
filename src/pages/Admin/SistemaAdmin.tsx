@@ -61,7 +61,9 @@ export default function SistemaAdmin() {
   }, []);
 
   useEffect(() => {
-    verificar();
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return verificar(); });
+    return () => { ativo = false; };
   }, [verificar]);
 
   const percent = cota

@@ -195,7 +195,9 @@ export default function UsuariosAdmin() {
   }, []);
 
   useEffect(() => {
-    carregar();
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return carregar(); });
+    return () => { ativo = false; };
   }, [carregar]);
 
   // executa uma ação do plugin, mostra o erro e recarrega a lista
