@@ -16,8 +16,10 @@ test("escolha de equipe e ciclo sobrevivem à navegação de autenticação", ()
 
 test("returnTo aceita rotas internas e rejeita destinos externos e loops", () => {
   assert.equal(safeReturnTo("/arquivos?folder=5#lista"), "/arquivos?folder=5#lista");
+  assert.equal(safeReturnTo("/home"), "/home");
+  assert.equal(safeReturnTo("/"), "/");
   for (const value of [null, "https://example.com", "//example.com", "/\\example.com", "/%2f%2fexample.com", "/login", "/cadastro/", "/foo/../login", "/%6cogin", "/\nexample.com", "/%zz"]) {
-    assert.equal(safeReturnTo(value), "/", String(value));
+    assert.equal(safeReturnTo(value), "/home", String(value));
   }
 });
 

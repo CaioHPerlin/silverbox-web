@@ -23,6 +23,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* rotas públicas */}
+        <Route path="/" element={<Planos />} />
         <Route path="/planos" element={<Planos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
@@ -30,7 +31,7 @@ export default function App() {
         <Route path="/nova-senha" element={<NovaSenha />} />
         {/* Rotas protegidas pela sessão do Better Auth. */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/arquivos" element={<Arquivos />} />
           <Route path="/lixeira" element={<Lixeira />} />
           <Route path="/compartilhados" element={<Compartilhados />} />

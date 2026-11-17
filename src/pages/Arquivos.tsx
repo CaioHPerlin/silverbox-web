@@ -12,6 +12,7 @@ import { urlDownload, type ArquivoApi } from "../services/files";
 import { type PastaApi } from "../services/folders";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FolderPlus } from "lucide-react";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -156,6 +157,7 @@ export default function Arquivos() {
     if (nome) novaPasta(nome);
   }
 
+  // Executa a ação pedida pelo menu "+ Novo" da Sidebar
   useEffect(() => {
     const state = location.state as {
       sidebarAction?: "new-folder" | "upload";
@@ -167,19 +169,12 @@ export default function Arquivos() {
 
     acaoProcessada.current = location.key;
 
-    // Limpa a ação para não repetir quando atualizar a página
-    navigate(location.pathname, {
-      replace: true,
-      state: null,
-    });
+    // limpa a ação para não repetir ao atualizar a página
+    navigate(location.pathname, { replace: true, state: null });
 
-    if (action === "new-folder") {
-      handleNovaPasta();
-    }
-
-    if (action === "upload") {
-      inputRef.current?.click();
-    }
+    if (action === "new-folder") handleNovaPasta();
+    if (action === "upload") inputRef.current?.click();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key, location.pathname, location.state, navigate]);
 
   function handleBaixar(id: string) {
@@ -370,9 +365,7 @@ export default function Arquivos() {
         )}
 
         {carregando && (
-          <div className="px-4 py-10 text-center text-sm text-gray-500">
-            Carregando...
-          </div>
+          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         )}
 
         {itemVazio && (
@@ -430,13 +423,13 @@ export default function Arquivos() {
             {filtered.map((file) => (
               <article
                 key={file.id}
-                className="min-w-0 rounded-xl border border-white/10 bg-white p-3"
+                className="min-w-0 rounded-xl border border-white/10 bg-white/3 p-3"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <FileIcon type={file.type} />
 
                   <div className="min-w-0 flex-1">
-                    <p className="wrap-break-words text-sm font-medium">
+                    <p className="break-words text-sm font-medium">
                       {file.name}
                     </p>
                     <button

@@ -44,7 +44,7 @@ export default function PlanSummary({ plan, selection, authenticated, onClose }:
           <div className="flex justify-between gap-4 py-4 font-semibold"><dt>{comingSoon ? "Total proposto" : "Valor"}</dt><dd>{comingSoon ? `${formatMoney(totalPrice(plan, selection.cycle, selection.seats))}/${selection.cycle === "year" ? "ano" : "mês"}` : "Grátis"}</dd></div>
         </dl>
         {comingSoon && <p className="mb-5 rounded-lg border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-sm leading-6 text-blue-200">A contratação dos planos pagos ainda não está disponível. Nenhuma cobrança será feita nesta página.</p>}
-        <Link to={authenticated ? "/" : authUrl("cadastro", returnTo)} className="flex min-h-11 items-center justify-center rounded-lg bg-blue-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400">{authenticated ? "Acessar minha conta" : "Criar conta gratuita"}</Link>
+        <Link to={authenticated ? "/home" : authUrl("cadastro", returnTo)} className="flex min-h-11 items-center justify-center rounded-lg bg-blue-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400">{authenticated ? "Acessar minha conta" : "Criar conta gratuita"}</Link>
         {!authenticated && <p className="mt-4 text-center text-sm text-zinc-400">Já tem uma conta? <Link to={authUrl("login", returnTo)} className="font-medium text-blue-400 hover:underline">Entrar</Link></p>}
       </div>
     </dialog>

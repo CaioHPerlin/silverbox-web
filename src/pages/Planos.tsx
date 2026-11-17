@@ -18,7 +18,7 @@ export default function Planos() {
   const selectedPlan = PLANS.find((plan) => plan.code === selection?.planCode);
   const cycle: BillingCycle = searchParams.get("cycle") === "year" ? "year" : "month";
   const freeUrl = planUrl({ planCode: "free", cycle: "month", seats: 1 });
-  const createAccountUrl = session ? "/" : authUrl("cadastro", freeUrl);
+  const createAccountUrl = session ? "/home" : authUrl("cadastro", freeUrl);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -52,7 +52,7 @@ export default function Planos() {
         <nav aria-label="Navegação da página de planos" className="flex items-center gap-5 text-sm sm:gap-7">
           <a href="#ofertas" className="hidden text-zinc-400 transition hover:text-white sm:inline">Planos</a>
           <a href="#comparacao" className="text-zinc-400 transition hover:text-white">Comparar</a>
-          <Link to={session ? "/" : authUrl("login", "/planos")} className="rounded-lg border border-white/15 px-4 py-2 font-medium transition hover:bg-white/5">{session ? "Minha conta" : "Entrar"}</Link>
+          <Link to={session ? "/home" : authUrl("login", "/home")} className="rounded-lg border border-white/15 px-4 py-2 font-medium transition hover:bg-white/5">{session ? "Minha conta" : "Entrar"}</Link>
         </nav>
       </header>
 

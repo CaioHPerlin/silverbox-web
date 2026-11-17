@@ -48,7 +48,7 @@ export default function Cadastro() {
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
         {/* Logo */}
-        <Link to="/planos" className="mb-6 flex items-center justify-center gap-2" aria-label="Silverbox, ver planos">
+        <Link to="/" className="mb-6 flex items-center justify-center gap-2" aria-label="Silverbox, página inicial">
           <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
           <span className="text-lg font-semibold text-white">Silverbox</span>
         </Link>

@@ -1,8 +1,20 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
 import { useSession } from "../lib/authClient";
 import { useEffect, useState } from "react";
-import { listarArquivos, type ArquivoApi } from "../services/files";
+import { FileActionsMenu } from "../components/FileActionsMenu";
+import { ShareModal } from "../components/ShareModal";
+import { RenameModal } from "../components/RenameModal";
+import { FolderPickerModal } from "../components/FolderPickerModal";
+import LoadingSkeleton from "../components/LoadingSkeleton";
+import {
+  listarArquivos,
+  urlDownload,
+  renomearArquivo,
+  moverArquivo,
+  moverParaLixeira,
+  type ArquivoApi,
+} from "../services/files";
 
 type ItemType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
 
@@ -16,6 +28,11 @@ interface RecentItem {
 interface SearchForm {
   query: string;
 }
+
+type SelectedFile = {
+  id: string;
+  name: string;
+};
 
 function getInitials(name: string) {
   return name
@@ -82,6 +99,21 @@ export default function Home() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
+  const [sharingFile, setSharingFile] = useState<SelectedFile | null>(null);
+  const [renamingFile, setRenamingFile] = useState<SelectedFile | null>(null);
+  const [movingFile, setMovingFile] = useState<SelectedFile | null>(null);
+
+  const { register, control } = useForm<SearchForm>({
+    defaultValues: { query: "" },
+  });
+
+  const valorPesquisa = useWatch({
+    control,
+    name: "query",
+  });
+
+  const pesquisa = (valorPesquisa ?? "").trim().toLowerCase();
+
   useEffect(() => {
     async function carregarArquivos() {
       try {
@@ -93,14 +125,58 @@ export default function Home() {
         setCarregando(false);
       }
     }
+
     carregarArquivos();
   }, []);
 
-  const { register } = useForm<SearchForm>({
-    defaultValues: { query: "" },
-  });
+  function handleBaixar(id: string) {
+    window.location.assign(urlDownload(Number(id)));
+  }
 
-  if (isPending) return <p className="p-8 text-gray-400">Carregando...</p>;
+  async function handleExcluir(id: string) {
+    try {
+      await moverParaLixeira(Number(id));
+
+      setArquivos((atuais) =>
+        atuais.filter((arquivo) => arquivo.id !== Number(id)),
+      );
+    } catch {
+      setErro("Não foi possível excluir o arquivo.");
+    }
+  }
+
+  async function handleRenomear(id: string, newName: string) {
+    try {
+      await renomearArquivo(Number(id), newName);
+
+      setArquivos((atuais) =>
+        atuais.map((arquivo) =>
+          arquivo.id === Number(id)
+            ? { ...arquivo, originalName: newName }
+            : arquivo,
+        ),
+      );
+
+      setRenamingFile(null);
+    } catch {
+      setErro("Não foi possível renomear o arquivo.");
+    }
+  }
+
+  async function handleMover(id: string, folderId: number | null) {
+    try {
+      await moverArquivo(Number(id), folderId);
+
+      const resposta = await listarArquivos(null, 1, 50);
+      setArquivos(resposta.files);
+
+      setMovingFile(null);
+    } catch {
+      setErro("Não foi possível mover o arquivo.");
+    }
+  }
+
+  if (isPending) return <LoadingSkeleton mensagem="Preparando sua nuvem..." />;
 
   if (!session)
     return <p className="p-8 text-gray-400">Sessão não encontrada.</p>;
@@ -161,7 +237,12 @@ export default function Home() {
     return grupos;
   }
 
-  const gruposRecentes = agruparPorData(itensRecentes);
+  const arquivosFiltrados = itensRecentes.filter((item) =>
+    item.name.toLowerCase().includes(pesquisa),
+  );
+
+  const gruposRecentes = agruparPorData(arquivosFiltrados);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
@@ -205,12 +286,16 @@ export default function Home() {
 
         {/* Arquivos recentes */}
         {carregando ? (
-          <p className="text-sm text-gray-500">Carregando arquivos...</p>
+          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         ) : erro ? (
           <p className="text-sm text-red-400">{erro}</p>
         ) : itensRecentes.length === 0 ? (
           <p className="text-sm text-gray-500">
             Você ainda não possui arquivos.
+          </p>
+        ) : arquivosFiltrados.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Nenhum arquivo encontrado para essa pesquisa.
           </p>
         ) : (
           Object.entries(gruposRecentes).map(
@@ -222,29 +307,71 @@ export default function Home() {
                   </h2>
 
                   <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {itens.map((item) => (
-                      <button
-                        key={item.id}
-                        className="flex w-full min-w-0 flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-white/20"
-                      >
-                        <ItemIcon type={item.type} />
+                    {itens.map((item) => {
+                      const arquivoSelecionado = {
+                        id: String(item.id),
+                        name: item.name,
+                      };
 
-                        <div className="w-full min-w-0">
-                          <p className="truncate text-sm font-medium">
-                            {item.name}
-                          </p>
+                      return (
+                        <article
+                          key={item.id}
+                          className="flex w-full min-w-0 flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4 transition-colors hover:border-white/20"
+                        >
+                          <div className="flex w-full items-start justify-between gap-3">
+                            <ItemIcon type={item.type} />
 
-                          <p className="text-xs text-gray-500">
-                            {new Date(item.date).toLocaleDateString("pt-BR")}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                            <FileActionsMenu
+                              onShare={() => setSharingFile(arquivoSelecionado)}
+                              onRename={() =>
+                                setRenamingFile(arquivoSelecionado)
+                              }
+                              onDownload={() =>
+                                handleBaixar(arquivoSelecionado.id)
+                              }
+                              onMove={() => setMovingFile(arquivoSelecionado)}
+                              onDelete={() =>
+                                handleExcluir(arquivoSelecionado.id)
+                              }
+                            />
+                          </div>
+
+                          <div className="w-full min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {item.name}
+                            </p>
+
+                            <p className="text-xs text-gray-500">
+                              {new Date(item.date).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
                 </section>
               ),
           )
         )}
+        {/* Modais das ações dos arquivos */}
+        <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />
+
+        <RenameModal
+          file={renamingFile}
+          onClose={() => setRenamingFile(null)}
+          onRenamed={(id, newName) => handleRenomear(id, newName)}
+        />
+
+        <FolderPickerModal
+          aberto={movingFile !== null}
+          titulo="Mover arquivo para..."
+          onClose={() => setMovingFile(null)}
+          onConfirm={(destino) => {
+            if (movingFile) {
+              handleMover(movingFile.id, destino);
+            }
+          }}
+        />
       </main>
     </div>
   );

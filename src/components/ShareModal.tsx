@@ -1,133 +1,242 @@
-import { useEffect, useState } from "react";
-import { FileText, Copy, Check } from "lucide-react";
-import { Modal } from "./Modal";
+import { useCallback, useEffect, useState } from "react";
+import {
+  criarLinkCompartilhamento,
+  EXPIRACAO_SHARE,
+  listarLinksCompartilhados,
+  mensagemErroShare,
+  revogarLinkCompartilhado,
+  statusDoLink,
+  type ShareApi,
+} from "../services/shares";
 
-interface ShareModalProps {
-  file: { id: string; name: string } | null;
+interface Props {
+  file: { id: string; name: string } | null; // null = fechado
   onClose: () => void;
 }
 
-type ExpirationOption = "1h" | "24h" | "7d" | "30d";
+const PRAZOS = [
+  { label: "1 hora", valor: EXPIRACAO_SHARE.UMA_HORA },
+  { label: "1 dia", valor: EXPIRACAO_SHARE.UM_DIA },
+  { label: "7 dias", valor: EXPIRACAO_SHARE.SETE_DIAS },
+];
 
-const EXPIRATION_LABELS: Record<ExpirationOption, string> = {
-  "1h": "1 hora",
-  "24h": "24 horas",
-  "7d": "7 dias",
-  "30d": "30 dias",
-};
+const estiloStatus = {
+  ativo: "text-emerald-400",
+  expirado: "text-amber-400",
+  revogado: "text-red-400",
+} as const;
 
-export function ShareModal({ file, onClose }: ShareModalProps) {
-  const [link, setLink] = useState("");
-  const [expiration, setExpiration] = useState<ExpirationOption>("24h");
-  const [copied, setCopied] = useState(false);
-  const [revoked, setRevoked] = useState(false);
-  const [createdAt, setCreatedAt] = useState<Date | null>(null);
+function dataHora(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-  // gera (ou regenera) o link sempre que o modal abre para um novo arquivo,
-  // ou quando o prazo de expiração muda
+export function ShareModal({ file, onClose }: Props) {
+  if (!file) return null;
+  return <ShareModalContent key={file.id} file={file} onClose={onClose} />;
+}
+
+function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props["file"]> }) {
+  const fileId = Number(file.id);
+
+  const [prazo, setPrazo] = useState<number>(EXPIRACAO_SHARE.UM_DIA);
+  const [gerado, setGerado] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [links, setLinks] = useState<ShareApi[]>([]);
+  const [gerando, setGerando] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const carregarLinks = useCallback(async () => {
+    if (fileId === null) return;
+    try {
+      setLinks(await listarLinksCompartilhados(fileId));
+    } catch (e) {
+      setErro(mensagemErroShare(e));
+    }
+  }, [fileId]);
+
+  // O conteúdo é remontado para cada arquivo; só a consulta precisa de um efeito.
   useEffect(() => {
-    if (!file) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetando o estado do modal ao trocar de arquivo/prazo, é o comportamento esperado
-    setRevoked(false);
-    setCopied(false);
-    setCreatedAt(new Date());
+    let ativo = true;
+    void Promise.resolve().then(() => { if (ativo) return carregarLinks(); });
+    return () => { ativo = false; };
+  }, [carregarLinks]);
 
-    // TODO: substituir por chamada real à API — algo como:
-    // const { url } = await apiClient.post(`/files/${file.id}/share`, { expiresIn: expiration });
-    // setLink(url);
-    const token = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
-    setLink(`nuvem.io/s/${token}`);
-  }, [file, expiration]);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(`https://${link}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  async function gerar() {
+    if (fileId === null) return;
+    setGerando(true);
+    setErro(null);
+    setCopiado(false);
+    try {
+      const r = await criarLinkCompartilhamento(fileId, prazo);
+      setGerado({ url: r.url, expiresAt: r.expiresAt });
+      await carregarLinks();
+    } catch (e) {
+      setErro(mensagemErroShare(e));
+    } finally {
+      setGerando(false);
+    }
   }
 
-  function handleRevoke() {
-    // TODO: substituir por chamada real à API — DELETE /files/{id}/share
-    setRevoked(true);
+  async function copiar() {
+    if (!gerado) return;
+    try {
+      await navigator.clipboard.writeText(gerado.url);
+      setCopiado(true);
+    } catch {
+      setErro("Não foi possível copiar. Selecione o link e copie manualmente.");
+    }
   }
 
-  const isOpen = file !== null;
+  async function revogar(shareId: number) {
+    if (fileId === null) return;
+    if (!window.confirm("Revogar este link? Quem tem o link perde o acesso.")) return;
+    try {
+      await revogarLinkCompartilhado(fileId, shareId);
+      setGerado(null); // o link recém-criado pode ter sido o revogado
+      await carregarLinks();
+    } catch (e) {
+      setErro(mensagemErroShare(e));
+    }
+  }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="w-[380px] rounded-2xl border border-zinc-700 bg-zinc-900 p-6">
-        <h2 className="mb-3 text-base font-semibold text-white">
-          Compartilhar arquivo
-        </h2>
-
-        <div className="mb-5 flex items-center gap-2 text-sm text-zinc-300">
-          <FileText className="h-4 w-4 text-red-400" />
-          {file?.name}
-        </div>
-
-        <label className="mb-1.5 block text-sm text-zinc-300">
-          Link de acesso temporário
-        </label>
-        <div className="mb-4 flex gap-2">
-          <input
-            readOnly
-            value={revoked ? "link revogado" : link}
-            className="flex-1 rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 disabled:opacity-50"
-            disabled={revoked}
-          />
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-xl border border-white/10 bg-[#161616] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">Compartilhar</h2>
+            <p className="truncate text-sm text-gray-500">{file.name}</p>
+          </div>
           <button
             type="button"
-            onClick={handleCopy}
-            disabled={revoked}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-600 px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="text-gray-500 hover:text-white"
           >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4 text-emerald-400" />
-                Copiado
-              </>
+            ✕
+          </button>
+        </div>
+
+        {erro && (
+          <div
+            role="alert"
+            className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
+            {erro}
+          </div>
+        )}
+
+        <p className="mb-3 text-sm text-gray-400">
+          Crie um link temporário. Quem tiver o link baixa o arquivo sem precisar
+          de login.
+        </p>
+
+        <div className="flex gap-2">
+          <select
+            value={prazo}
+            onChange={(e) => setPrazo(Number(e.target.value))}
+            aria-label="Validade do link"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+          >
+            {PRAZOS.map((p) => (
+              <option key={p.valor} value={p.valor}>
+                Válido por {p.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={gerar}
+            disabled={gerando}
+            className="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium hover:bg-blue-600 disabled:opacity-50"
+          >
+            {gerando ? "Gerando..." : "Gerar link"}
+          </button>
+        </div>
+
+        {gerado && (
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3">
+            <p className="mb-2 text-xs text-gray-400">
+              Copie agora: o link só aparece desta vez. Expira em{" "}
+              {dataHora(gerado.expiresAt)}.
+            </p>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={gerado.url}
+                onFocus={(e) => e.currentTarget.select()}
+                aria-label="Link de compartilhamento"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-xs"
+              />
+              <button
+                type="button"
+                onClick={copiar}
+                className="shrink-0 rounded-md border border-white/15 px-3 py-1.5 text-xs hover:bg-white/10"
+              >
+                {copiado ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-5">
+          <p className="mb-2 text-xs uppercase tracking-wide text-gray-500">
+            Links deste arquivo
+          </p>
+          <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10">
+            {links.length === 0 ? (
+              <p className="px-3 py-5 text-center text-sm text-gray-500">
+                Nenhum link criado.
+              </p>
             ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copiar
-              </>
+              links.map((l) => {
+                const status = statusDoLink(l);
+                return (
+                  <div
+                    key={l.id}
+                    className="flex items-center justify-between gap-2 border-b border-white/5 px-3 py-2 text-sm last:border-b-0"
+                  >
+                    <div className="min-w-0">
+                      <p className={`text-xs font-medium ${estiloStatus[status]}`}>
+                        {status === "ativo"
+                          ? "Ativo"
+                          : status === "expirado"
+                            ? "Expirado"
+                            : "Revogado"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Criado {dataHora(l.createdAt)} · expira {dataHora(l.expiresAt)}
+                      </p>
+                    </div>
+                    {status === "ativo" && (
+                      <button
+                        type="button"
+                        onClick={() => revogar(l.id)}
+                        className="shrink-0 text-xs text-red-300 hover:text-red-200"
+                      >
+                        Revogar
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
-          </button>
-        </div>
-
-        <label className="mb-1.5 block text-sm text-zinc-300">Expira em</label>
-        <select
-          value={expiration}
-          onChange={(e) => setExpiration(e.target.value as ExpirationOption)}
-          disabled={revoked}
-          className="mb-5 w-full rounded-lg border border-zinc-600 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-[#5C93E6] focus:outline-none disabled:opacity-50"
-        >
-          {Object.entries(EXPIRATION_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
-          <span className="text-xs text-zinc-500">
-            {revoked
-              ? "Link revogado"
-              : createdAt &&
-                `Link ativo desde ${createdAt.toLocaleDateString("pt-BR")} às ${createdAt.toLocaleTimeString(
-                  "pt-BR",
-                  { hour: "2-digit", minute: "2-digit" },
-                )}`}
-          </span>
-          <button
-            type="button"
-            onClick={handleRevoke}
-            disabled={revoked}
-            className="rounded-lg border border-red-900 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Revogar
-          </button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
