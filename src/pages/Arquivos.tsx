@@ -7,12 +7,17 @@ import { RenameModal } from "../components/RenameModal";
 import { FolderPickerModal } from "../components/FolderPickerModal";
 import { VersionsModal } from "../components/VersionsModal";
 import { useArquivos } from "../hooks/useArquivos";
+import { useBusca } from "../hooks/useBusca";
 import { formatBytes } from "../lib/format";
 import { urlDownload, type ArquivoApi } from "../services/files";
 import { type PastaApi } from "../services/folders";
+import {
+  textoDoLocal,
+  type EscopoBusca,
+  type ItemBusca,
+} from "../services/search";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FolderPlus } from "lucide-react";
-import LoadingSkeleton from "../components/LoadingSkeleton";
 
 // ---- Tipos ----
 type FileType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
@@ -100,10 +105,11 @@ function FolderIcon() {
 }
 
 export default function Arquivos() {
-  const { register, watch } = useForm<SearchForm>({
+  const { register, watch, reset } = useForm<SearchForm>({
     defaultValues: { query: "" },
   });
   const query = watch("query");
+  const [escopo, setEscopo] = useState<EscopoBusca>("all");
 
   // navegação entre pastas: pilha com o caminho até a pasta atual
   const [caminho, setCaminho] = useState<{ id: number; name: string }[]>([]);
@@ -129,6 +135,8 @@ export default function Arquivos() {
     apagarPasta,
   } = useArquivos(folderId);
 
+  const busca = useBusca(query, escopo, folderId);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const location = useLocation();
@@ -142,9 +150,6 @@ export default function Arquivos() {
   const [versionsFile, setVersionsFile] = useState<StoredFile | null>(null);
 
   const files = arquivos.map(paraTela);
-  const filtered = files.filter((f) =>
-    f.name.toLowerCase().includes(query.toLowerCase()),
-  );
 
   function handleSelecionar(e: React.ChangeEvent<HTMLInputElement>) {
     const selecionados = Array.from(e.target.files ?? []);
@@ -182,7 +187,17 @@ export default function Arquivos() {
     window.location.href = urlDownload(Number(id));
   }
 
-  const itemVazio = !carregando && pastas.length === 0 && filtered.length === 0;
+  // Abre o local do resultado e volta à navegação normal
+  function abrirItem(item: ItemBusca) {
+    if (item.kind === "folder") {
+      setCaminho([...item.path, { id: item.id, name: item.name }]);
+    } else {
+      setCaminho(item.path);
+    }
+    reset({ query: "" });
+  }
+
+  const itemVazio = !carregando && pastas.length === 0 && files.length === 0;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
@@ -274,180 +289,243 @@ export default function Arquivos() {
           </div>
         )}
 
+        {/* Busca + escopo */}
         <form
-          className="relative mb-6 w-full sm:max-w-md"
+          className="mb-6 flex w-full flex-col gap-2 sm:max-w-xl sm:flex-row"
           onSubmit={(event) => event.preventDefault()}
         >
-          <svg
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
 
-          <input
-            {...register("query")}
-            placeholder="Buscar arquivo..."
-            aria-label="Buscar arquivo"
-            className="w-full rounded-lg border border-white/10 bg-white/5 py-3 pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:py-2"
-          />
+            <input
+              {...register("query")}
+              maxLength={100}
+              placeholder="Buscar arquivo ou pasta..."
+              aria-label="Buscar arquivo ou pasta"
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-3 pl-9 pr-3 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:py-2"
+            />
+          </div>
+
+          <select
+            value={escopo}
+            onChange={(e) => setEscopo(e.target.value as EscopoBusca)}
+            aria-label="Escopo da busca"
+            className="rounded-lg border border-white/10 bg-[#161616] px-3 py-3 text-sm sm:py-2"
+          >
+            <option value="all">Todos os arquivos</option>
+            <option value="pasta">Nesta pasta</option>
+          </select>
         </form>
 
-        {/* Pastas */}
-        {pastas.length > 0 && (
-          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pastas.map((pasta) => (
-              <div
-                key={pasta.id}
-                className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 px-3 py-3 transition-colors hover:bg-white/5"
+        {busca.ativa ? (
+          /* ---- Resultados da busca ---- */
+          <section aria-label="Resultados da busca">
+            <p className="mb-3 text-sm text-gray-400">
+              {busca.carregando
+                ? "Buscando..."
+                : `${busca.total} resultado(s) para "${busca.q}"`}{" "}
+              ·{" "}
+              <button
+                type="button"
+                onClick={() => reset({ query: "" })}
+                className="text-blue-400 hover:text-blue-300"
               >
+                limpar busca
+              </button>
+            </p>
+
+            {busca.erro && (
+              <div
+                role="alert"
+                className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+              >
+                {busca.erro}
+              </div>
+            )}
+
+            {!busca.carregando && busca.itens.length === 0 && !busca.erro && (
+              <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
+                Nada encontrado para essa busca.
+              </div>
+            )}
+
+            <ul className="flex flex-col gap-2">
+              {busca.itens.map((item) => (
+                <li key={`${item.kind}-${item.id}`}>
+                  <button
+                    type="button"
+                    onClick={() => abrirItem(item)}
+                    className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-white/10 px-3 py-3 text-left transition-colors hover:bg-white/5"
+                  >
+                    {item.kind === "folder" ? (
+                      <FolderIcon />
+                    ) : (
+                      <FileIcon type={tipoDoArquivo(item.name, item.mimeType)} />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">{item.name}</span>
+                      <span className="block truncate text-xs text-gray-500">
+                        {textoDoLocal(item.path)}
+                      </span>
+                    </span>
+                    {item.sizeBytes !== null && (
+                      <span className="shrink-0 text-xs text-gray-400">
+                        {formatBytes(item.sizeBytes)}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {busca.totalPaginas > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
                 <button
                   type="button"
-                  onClick={() =>
-                    setCaminho([...caminho, { id: pasta.id, name: pasta.name }])
-                  }
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  disabled={busca.pagina <= 1}
+                  onClick={() => busca.setPagina(busca.pagina - 1)}
+                  className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
                 >
-                  <FolderIcon />
-                  <span className="truncate text-sm">{pasta.name}</span>
+                  Anterior
                 </button>
-
-                <div className="flex shrink-0 items-center gap-2 text-gray-500">
-                  <button
-                    type="button"
-                    aria-label={`Renomear pasta ${pasta.name}`}
-                    onClick={() => {
-                      const nome = window
-                        .prompt("Novo nome da pasta:", pasta.name)
-                        ?.trim();
-                      if (nome && nome !== pasta.name)
-                        renomearPasta(pasta.id, nome);
-                    }}
-                    className="transition-colors hover:text-white"
-                  >
-                    ✎
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Mover pasta ${pasta.name}`}
-                    onClick={() => setMovingFolder(pasta)}
-                    className="transition-colors hover:text-white"
-                  >
-                    ➜
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Excluir pasta ${pasta.name}`}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Excluir a pasta "${pasta.name}"? Só funciona se estiver vazia.`,
-                        )
-                      )
-                        apagarPasta(pasta.id);
-                    }}
-                    className="transition-colors hover:text-red-400"
-                  >
-                    ✕
-                  </button>
-                </div>
+                <span>
+                  Página {busca.pagina} de {busca.totalPaginas}
+                </span>
+                <button
+                  type="button"
+                  disabled={busca.pagina >= busca.totalPaginas}
+                  onClick={() => busca.setPagina(busca.pagina + 1)}
+                  className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+                >
+                  Próxima
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-
-        {carregando && (
-          <LoadingSkeleton mensagem="Carregando seus arquivos..." />
-        )}
-
-        {itemVazio && (
-          <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
-            Nenhum arquivo encontrado.
-          </div>
-        )}
-
-        {/* Tabela para telas médias e grandes */}
-        {!carregando && filtered.length > 0 && (
-          <div className="hidden overflow-visible rounded-xl border border-white/10 sm:block">
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/10 px-3 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4">
-              <span>Nome</span>
-              <span>Tamanho</span>
-              <span>Enviado em</span>
-              <span aria-label="Ações" />
-            </div>
-
-            {filtered.map((file) => (
-              <div
-                key={file.id}
-                className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/5 px-3 py-3 transition-colors last:border-b-0 hover:bg-white/5 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <FileIcon type={file.type} />
-                  <span className="truncate text-sm">{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setVersionsFile(file)}
-                    className="shrink-0 text-xs text-gray-500 hover:text-white"
-                    aria-label={`Versões de ${file.name}`}
+            )}
+          </section>
+        ) : (
+          <>
+            {/* Pastas */}
+            {pastas.length > 0 && (
+              <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pastas.map((pasta) => (
+                  <div
+                    key={pasta.id}
+                    className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 px-3 py-3 transition-colors hover:bg-white/5"
                   >
-                    Versões
-                  </button>
-                </div>
-
-                <span className="text-sm text-gray-400">{file.size}</span>
-                <span className="text-sm text-gray-400">{file.date}</span>
-
-                <FileActionsMenu
-                  onShare={() => setSharingFile(file)}
-                  onRename={() => setRenamingFile(file)}
-                  onDownload={() => handleBaixar(file.id)}
-                  onMove={() => setMovingFile(file)}
-                  onDelete={() => lixeira(Number(file.id))}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Cartões para celulares */}
-        {!carregando && filtered.length > 0 && (
-          <div className="space-y-3 sm:hidden">
-            {filtered.map((file) => (
-              <article
-                key={file.id}
-                className="min-w-0 rounded-xl border border-white/10 bg-white/3 p-3"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <FileIcon type={file.type} />
-
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words text-sm font-medium">
-                      {file.name}
-                    </p>
                     <button
                       type="button"
-                      onClick={() => setVersionsFile(file)}
-                      className="mt-1 text-xs text-gray-500 hover:text-white"
-                      aria-label={`Versões de ${file.name}`}
+                      onClick={() =>
+                        setCaminho([
+                          ...caminho,
+                          { id: pasta.id, name: pasta.name },
+                        ])
+                      }
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
                     >
-                      Versões
+                      <FolderIcon />
+                      <span className="truncate text-sm">{pasta.name}</span>
                     </button>
 
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-                      <span>{file.size}</span>
-                      <span>{file.date}</span>
+                    <div className="flex shrink-0 items-center gap-2 text-gray-500">
+                      <button
+                        type="button"
+                        aria-label={`Renomear pasta ${pasta.name}`}
+                        onClick={() => {
+                          const nome = window
+                            .prompt("Novo nome da pasta:", pasta.name)
+                            ?.trim();
+                          if (nome && nome !== pasta.name)
+                            renomearPasta(pasta.id, nome);
+                        }}
+                        className="transition-colors hover:text-white"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Mover pasta ${pasta.name}`}
+                        onClick={() => setMovingFolder(pasta)}
+                        className="transition-colors hover:text-white"
+                      >
+                        ➜
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Excluir pasta ${pasta.name}`}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Excluir a pasta "${pasta.name}"? Só funciona se estiver vazia.`,
+                            )
+                          )
+                            apagarPasta(pasta.id);
+                        }}
+                        className="transition-colors hover:text-red-400"
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  <div className="shrink-0">
+            {carregando && (
+              <div className="px-4 py-10 text-center text-sm text-gray-500">
+                Carregando...
+              </div>
+            )}
+
+            {itemVazio && (
+              <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
+                Nenhum arquivo encontrado.
+              </div>
+            )}
+
+            {/* Tabela para telas médias e grandes */}
+            {!carregando && files.length > 0 && (
+              <div className="hidden overflow-visible rounded-xl border border-white/10 sm:block">
+                <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/10 px-3 py-3 text-xs uppercase tracking-wide text-gray-500 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4">
+                  <span>Nome</span>
+                  <span>Tamanho</span>
+                  <span>Enviado em</span>
+                  <span aria-label="Ações" />
+                </div>
+
+                {files.map((file) => (
+                  <div
+                    key={file.id}
+                    className="grid grid-cols-[minmax(0,1fr)_90px_110px_40px] items-center gap-2 border-b border-white/5 px-3 py-3 transition-colors last:border-b-0 hover:bg-white/5 md:grid-cols-[minmax(0,1fr)_120px_140px_40px] md:px-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <FileIcon type={file.type} />
+                      <span className="truncate text-sm">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setVersionsFile(file)}
+                        className="shrink-0 text-xs text-gray-500 hover:text-white"
+                        aria-label={`Versões de ${file.name}`}
+                      >
+                        Versões
+                      </button>
+                    </div>
+
+                    <span className="text-sm text-gray-400">{file.size}</span>
+                    <span className="text-sm text-gray-400">{file.date}</span>
+
                     <FileActionsMenu
                       onShare={() => setSharingFile(file)}
                       onRename={() => setRenamingFile(file)}
@@ -456,35 +534,80 @@ export default function Arquivos() {
                       onDelete={() => lixeira(Number(file.id))}
                     />
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                ))}
+              </div>
+            )}
 
-        {/* Paginação */}
-        {!carregando && total > 0 && totalPaginas > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
-            <button
-              type="button"
-              disabled={pagina <= 1}
-              onClick={() => setPagina(pagina - 1)}
-              className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
-            >
-              Anterior
-            </button>
-            <span>
-              Página {pagina} de {totalPaginas}
-            </span>
-            <button
-              type="button"
-              disabled={pagina >= totalPaginas}
-              onClick={() => setPagina(pagina + 1)}
-              className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
-            >
-              Próxima
-            </button>
-          </div>
+            {/* Cartões para celulares */}
+            {!carregando && files.length > 0 && (
+              <div className="space-y-3 sm:hidden">
+                {files.map((file) => (
+                  <article
+                    key={file.id}
+                    className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <FileIcon type={file.type} />
+
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm font-medium">
+                          {file.name}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setVersionsFile(file)}
+                          className="mt-1 text-xs text-gray-500 hover:text-white"
+                          aria-label={`Versões de ${file.name}`}
+                        >
+                          Versões
+                        </button>
+
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+                          <span>{file.size}</span>
+                          <span>{file.date}</span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        <FileActionsMenu
+                          onShare={() => setSharingFile(file)}
+                          onRename={() => setRenamingFile(file)}
+                          onDownload={() => handleBaixar(file.id)}
+                          onMove={() => setMovingFile(file)}
+                          onDelete={() => lixeira(Number(file.id))}
+                        />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {/* Paginação */}
+            {!carregando && total > 0 && totalPaginas > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
+                <button
+                  type="button"
+                  disabled={pagina <= 1}
+                  onClick={() => setPagina(pagina - 1)}
+                  className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <span>
+                  Página {pagina} de {totalPaginas}
+                </span>
+                <button
+                  type="button"
+                  disabled={pagina >= totalPaginas}
+                  onClick={() => setPagina(pagina + 1)}
+                  className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <ShareModal file={sharingFile} onClose={() => setSharingFile(null)} />

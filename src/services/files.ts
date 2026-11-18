@@ -19,10 +19,15 @@ export type ListaArquivos = {
   total: number;
 };
 
-export function listarArquivos(folderId?: number | null, page = 1, limit = 50) {
+export function listarArquivos(
+  folderId?: number | null,
+  page = 1,
+  limit = 50,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (folderId != null) params.set("folderId", String(folderId));
-  return api.get<ListaArquivos>(`/files?${params}`);
+  return api.get<ListaArquivos>(`/files?${params}`, { signal });
 }
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -34,7 +39,7 @@ export async function enviarArquivo(file: File, folderId?: number | null): Promi
       const { file: criado } = await api.upload<{ file: ArquivoApi }>(
         "/files",
         file,
-        folderId ?? undefined
+        folderId ?? undefined,
       );
       return criado;
     } catch (err) {
@@ -64,6 +69,11 @@ export async function moverArquivo(id: number, folderId: number | null) {
 
 export function moverParaLixeira(id: number) {
   return api.delete<void>(`/files/${id}`);
+}
+
+// Requisição cancelada (troca rápida de termo): não deve virar banner de erro
+export function foiCancelado(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
 }
 
 export function mensagemDeErro(err: unknown): string {
