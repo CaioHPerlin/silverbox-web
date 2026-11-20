@@ -31,6 +31,17 @@ Logs: `docker compose logs -f web`. Parar: `docker compose down`. O web não gua
 
 O contêiner Nginx não usa o proxy de desenvolvimento. Para apontar o contêiner a outra API: `API_URL=https://api.seudominio docker compose up -d --force-recreate`. Não reconstruir a imagem para mudar a origem: `/runtime-config.js` é gerado no início, sem cache. Usar origens HTTP(S), sem caminho ou barra final. Para sessões diretas, use web/API no mesmo site HTTPS e configure a origem no Better Auth da API; CORS sozinho não altera as regras SameSite do navegador.
 
+## Acesso administrativo
+
+As rotas `/admin/*` exigem sessão e papel `admin`. Anônimo é redirecionado ao
+login; usuário comum vê "Acesso negado". Esconder o menu é só usabilidade: a
+autorização real é feita no servidor.
+
+Para testar: cadastre uma conta comum por `/cadastro` e peça à equipe da API
+para promovê-la (veja o README do `silverbox-api`). Faça logout e login de novo
+após a mudança de papel. Nunca registre e-mails, senhas ou tokens de contas
+administrativas em código, issues ou tickets.
+
 ## Desenvolvimento
 
 Node 24 e pnpm 11:
