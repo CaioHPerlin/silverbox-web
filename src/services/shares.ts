@@ -107,7 +107,18 @@ export function statusDoLink(l: {
   return new Date(l.expiresAt).getTime() <= Date.now() ? "expirado" : "ativo";
 }
 
-export async function listarMeusLinks() {
-  const { shares } = await api.get<{ shares: LinkApi[] }>("/shares");
-  return shares;
+export async function listarMeusLinks(): Promise<LinkApi[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = await api.get<{ shares?: any[] }>("/shares");
+  return (r?.shares ?? []).map((s) => ({
+    id: s.id,
+    fileId: s.fileId ?? s.file?.id,
+    fileName:
+      s.fileName ?? s.originalName ?? s.name ?? s.file?.originalName ?? "(sem nome)",
+    sizeBytes: s.sizeBytes ?? s.file?.sizeBytes ?? 0,
+    mimeType: s.mimeType ?? s.file?.mimeType ?? null,
+    expiresAt: s.expiresAt,
+    revokedAt: s.revokedAt ?? null,
+    createdAt: s.createdAt,
+  }));
 }

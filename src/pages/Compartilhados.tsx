@@ -132,9 +132,9 @@ export default function Compartilhados() {
     await carregar();
   }
 
-  const filtered = links.filter((l) =>
-    l.fileName.toLowerCase().includes(query),
-  );
+const filtered = links.filter((l) =>
+  (l.fileName ?? "").toLowerCase().includes(query),
+);
 
   function Acao({ l, status }: { l: LinkApi; status: StatusLink }) {
     return status === "ativo" ? (
