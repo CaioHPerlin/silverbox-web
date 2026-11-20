@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
+import { FolderActionsMenu } from "../components/FolderActionsMenu";
 import { FileActionsMenu } from "../components/FileActionsMenu";
 import { ShareModal } from "../components/ShareModal";
 import { RenameModal } from "../components/RenameModal";
@@ -88,7 +89,7 @@ function FileIcon({ type }: { type: FileType }) {
 function FolderIcon() {
   return (
     <svg
-      className="h-5 w-5 shrink-0 text-yellow-400"
+      className="h-5 w-5 shrink-0 text-gray-400"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -373,10 +374,14 @@ export default function Arquivos() {
                     {item.kind === "folder" ? (
                       <FolderIcon />
                     ) : (
-                      <FileIcon type={tipoDoArquivo(item.name, item.mimeType)} />
+                      <FileIcon
+                        type={tipoDoArquivo(item.name, item.mimeType)}
+                      />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">{item.name}</span>
+                      <span className="block truncate text-sm">
+                        {item.name}
+                      </span>
                       <span className="block truncate text-xs text-gray-500">
                         {textoDoLocal(item.path)}
                       </span>
@@ -439,44 +444,28 @@ export default function Arquivos() {
                       <span className="truncate text-sm">{pasta.name}</span>
                     </button>
 
-                    <div className="flex shrink-0 items-center gap-2 text-gray-500">
-                      <button
-                        type="button"
-                        aria-label={`Renomear pasta ${pasta.name}`}
-                        onClick={() => {
+                    <div className="shrink-0">
+                      <FolderActionsMenu
+                        onRename={() => {
                           const nome = window
                             .prompt("Novo nome da pasta:", pasta.name)
                             ?.trim();
-                          if (nome && nome !== pasta.name)
+
+                          if (nome && nome !== pasta.name) {
                             renomearPasta(pasta.id, nome);
+                          }
                         }}
-                        className="transition-colors hover:text-white"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Mover pasta ${pasta.name}`}
-                        onClick={() => setMovingFolder(pasta)}
-                        className="transition-colors hover:text-white"
-                      >
-                        ➜
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Excluir pasta ${pasta.name}`}
-                        onClick={() => {
+                        onMove={() => setMovingFolder(pasta)}
+                        onDelete={() => {
                           if (
                             window.confirm(
                               `Excluir a pasta "${pasta.name}"? Só funciona se estiver vazia.`,
                             )
-                          )
+                          ) {
                             apagarPasta(pasta.id);
+                          }
                         }}
-                        className="transition-colors hover:text-red-400"
-                      >
-                        ✕
-                      </button>
+                      />
                     </div>
                   </div>
                 ))}
@@ -502,7 +491,7 @@ export default function Arquivos() {
                   <span>Nome</span>
                   <span>Tamanho</span>
                   <span>Enviado em</span>
-                  <span aria-label="Ações" />
+                  <span>Ações</span>
                 </div>
 
                 {files.map((file) => (
