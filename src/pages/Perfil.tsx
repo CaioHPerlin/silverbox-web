@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import LoadingSkeleton from "../components/LoadingSkeleton";
-import { buscarAvatar, salvarAvatar } from "../services/avatar";
+import { buscarAvatar, salvarAvatar, removerAvatar } from "../services/avatar";
+import { EVENTO_COTA } from "../lib/cotaEvents";
 
 function getInitials(name: string) {
   return name
@@ -35,6 +36,7 @@ export default function Perfil() {
   const [avatarError, setAvatarError] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
 
   //Função para inserir foto
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -88,6 +90,37 @@ export default function Perfil() {
       );
     } finally {
       setSavingAvatar(false);
+    }
+  }
+
+  // Função para remover foto
+  async function handleRemoveAvatar() {
+    const confirmar = window.confirm(
+      "Tem certeza de que deseja remover sua foto de perfil?",
+    );
+
+    if (!confirmar) return;
+
+    setDeletingAvatar(true);
+    setAvatarError("");
+
+    try {
+      await removerAvatar();
+
+      setAvatarUrl(null);
+      setAvatarPreview(null);
+      setAvatarFile(null);
+
+      // Atualiza a cota de armazenamento
+      window.dispatchEvent(new Event(EVENTO_COTA));
+    } catch (error) {
+      setAvatarError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível remover a foto.",
+      );
+    } finally {
+      setDeletingAvatar(false);
     }
   }
 
@@ -256,6 +289,17 @@ export default function Perfil() {
                         }}
                       />
                     </label>
+
+                    {avatarUrl && !avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={deletingAvatar || savingAvatar}
+                        className="rounded-lg border border-red-500/30 px-4 py-3 text-sm text-red-400 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2.5"
+                      >
+                        {deletingAvatar ? "Removendo..." : "Remover foto"}
+                      </button>
+                    )}
 
                     {avatarFile && (
                       <button
