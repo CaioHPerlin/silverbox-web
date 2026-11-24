@@ -3,17 +3,19 @@ import { Link } from "react-router-dom";
 import { FileText, Users } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { api, ApiError } from "../../services/apiClient";
-import LoadingSkeleton from "../../components/LoadingSkeleton";
+import { mensagemDeErro } from "../../services/files";
 
-// ---- Contrato esperado de GET /admin/audit ----
+// ---- Contrato de GET /admin/audit ----
 interface AuditLog {
-  id: number | string;
-  createdAt: string; // ISO
+  id: number;
+  createdAt: string;
+  userId: number | null;
+  actorName: string | null;
+  actorEmail: string | null;
   action: string;
-  ip: string | null;
-  userName: string | null;
-  userEmail: string | null;
-  outcome?: "ok" | "error";
+  ipAddress: string | null;
+  requestId: string | null;
+  details: string | null;
 }
 
 interface AuditResponse {
@@ -25,6 +27,30 @@ interface AuditResponse {
 
 const POR_PAGINA = 50;
 
+// Complete com os códigos reais que aparecerem na tela
+const ACOES: Record<string, string> = {
+  "file.upload": "Upload de arquivo",
+  "file.download": "Download de arquivo",
+  "file.delete": "Moveu arquivo para a lixeira",
+  "file.restore": "Restaurou arquivo",
+  "file.permanent_delete": "Excluiu arquivo definitivamente",
+  "share.create": "Criou link de compartilhamento",
+  "share.revoke": "Revogou link de compartilhamento",
+  "auth.login": "Login",
+  "auth.logout": "Logout",
+};
+
+function textoDaAcao(action: string) {
+  return ACOES[action] ?? action;
+}
+
+// Sem campo de resultado na API: destaca ações que parecem falha
+function ehErro(l: AuditLog) {
+  return /(denied|refus|recus|error|erro|fail|falh|forbidden)/i.test(
+    `${l.action} ${l.details ?? ""}`,
+  );
+}
+
 function dataHora(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", {
     day: "2-digit",
@@ -32,10 +58,6 @@ function dataHora(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function actionColor(outcome?: "ok" | "error") {
-  return outcome === "error" ? "text-red-500" : "text-white";
 }
 
 function csvCell(v: string | null | undefined) {
@@ -47,29 +69,23 @@ export default function AuditoriaAdmin() {
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
-  const [pendente, setPendente] = useState(false); // rota ainda não existe no back
+  const [pendente, setPendente] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    setCarregando(true);
     try {
       const r = await api.get<AuditResponse>(
         `/admin/audit?page=${pagina}&limit=${POR_PAGINA}`,
       );
-      setLogs(r.logs);
-      setTotal(r.total);
+      setLogs(r?.logs ?? []);
+      setTotal(r?.total ?? 0);
       setPendente(false);
       setErro(null);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 404) {
-        setPendente(true);
-      } else if (e instanceof ApiError && e.status === 403) {
+      if (e instanceof ApiError && e.status === 404) setPendente(true);
+      else if (e instanceof ApiError && e.status === 403)
         setErro("Você não tem permissão para ver a auditoria.");
-      } else {
-        setErro(
-          e instanceof Error ? e.message : "Falha ao carregar a auditoria.",
-        );
-      }
+      else setErro(mensagemDeErro(e));
     } finally {
       setCarregando(false);
     }
@@ -83,19 +99,34 @@ export default function AuditoriaAdmin() {
     return () => {
       ativo = false;
     };
+    carregar();
   }, [carregar]);
+
+  function irParaPagina(nova: number) {
+    setCarregando(true);
+    setPagina(nova);
+  }
 
   function handleExport() {
     const linhas = [
-      ["Data/Hora", "Nome", "E-mail", "Ação", "IP", "Resultado"].join(";"),
+      [
+        "Data/Hora",
+        "Nome",
+        "E-mail",
+        "Ação",
+        "IP",
+        "Detalhes",
+        "Request ID",
+      ].join(";"),
       ...logs.map((l) =>
         [
           csvCell(new Date(l.createdAt).toLocaleString("pt-BR")),
-          csvCell(l.userName),
-          csvCell(l.userEmail),
-          csvCell(l.action),
-          csvCell(l.ip),
-          csvCell(l.outcome === "error" ? "erro" : "ok"),
+          csvCell(l.actorName),
+          csvCell(l.actorEmail),
+          csvCell(textoDaAcao(l.action)),
+          csvCell(l.ipAddress),
+          csvCell(l.details),
+          csvCell(l.requestId),
         ].join(";"),
       ),
     ];
@@ -112,6 +143,7 @@ export default function AuditoriaAdmin() {
   }
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  const cor = (l: AuditLog) => (ehErro(l) ? "text-red-500" : "text-white");
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
@@ -157,15 +189,15 @@ export default function AuditoriaAdmin() {
           <div className="rounded-xl border border-dashed border-white/15 px-5 py-6">
             <h2 className="text-sm text-gray-300">Auditoria indisponível</h2>
             <p className="mt-1 text-sm text-gray-500">
-              A tabela <code>audit_logs</code> já existe no banco, mas a API
-              ainda não tem a rota <code>GET /admin/audit</code> para lê-la.
-              Assim que ela existir, os registros aparecem aqui.
+              A API não respondeu em <code>GET /admin/audit</code>.
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
             {carregando ? (
-              <LoadingSkeleton mensagem="Carregando dados da auditoria..." />
+              <p className="py-10 text-center text-sm text-gray-500">
+                Carregando...
+              </p>
             ) : logs.length === 0 ? (
               <p className="py-10 text-center text-sm text-gray-500">
                 Nenhum registro de auditoria.
@@ -181,27 +213,28 @@ export default function AuditoriaAdmin() {
                     <span>Data/Hora</span>
                     <span>Endereço IP</span>
                   </div>
-                  {logs.map((log) => (
+                  {logs.map((l) => (
                     <div
-                      key={log.id}
+                      key={l.id}
                       className="grid grid-cols-[1fr_1.2fr_1.3fr_120px_140px] items-center gap-3 border-b border-white/5 px-2 py-4 transition-colors last:border-b-0 hover:bg-white/5"
                     >
                       <span className="truncate text-sm font-medium">
-                        {log.userName ?? "—"}
+                        {l.actorName ?? "—"}
                       </span>
                       <span className="truncate text-sm text-gray-300">
-                        {log.userEmail ?? "—"}
+                        {l.actorEmail ?? "—"}
                       </span>
                       <span
-                        className={`text-sm font-medium ${actionColor(log.outcome)}`}
+                        className={`truncate text-sm font-medium ${cor(l)}`}
+                        title={l.details ?? undefined}
                       >
-                        {log.action}
+                        {textoDaAcao(l.action)}
                       </span>
                       <span className="truncate text-sm text-gray-300">
-                        {dataHora(log.createdAt)}
+                        {dataHora(l.createdAt)}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {log.ip ?? "—"}
+                        {l.ipAddress ?? "—"}
                       </span>
                     </div>
                   ))}
@@ -209,26 +242,29 @@ export default function AuditoriaAdmin() {
 
                 {/* Cartões: celular e tablet */}
                 <div className="flex flex-col gap-2 lg:hidden">
-                  {logs.map((log) => (
+                  {logs.map((l) => (
                     <div
-                      key={log.id}
+                      key={l.id}
                       className="rounded-xl border border-white/10 px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="truncate text-sm font-medium">
-                          {log.userName ?? "—"}
+                          {l.actorName ?? "—"}
                         </p>
                         <span className="shrink-0 text-xs text-gray-500">
-                          {dataHora(log.createdAt)}
+                          {dataHora(l.createdAt)}
                         </span>
                       </div>
-                      <p
-                        className={`mt-2 text-sm font-medium ${actionColor(log.outcome)}`}
-                      >
-                        {log.action}
+                      <p className={`mt-2 text-sm font-medium ${cor(l)}`}>
+                        {textoDaAcao(l.action)}
                       </p>
+                      {l.details && (
+                        <p className="mt-1 break-words text-xs text-gray-400">
+                          {l.details}
+                        </p>
+                      )}
                       <p className="mt-1 text-xs text-gray-500">
-                        {log.ip ?? "—"}
+                        {l.ipAddress ?? "—"}
                       </p>
                     </div>
                   ))}
@@ -239,7 +275,7 @@ export default function AuditoriaAdmin() {
                     <button
                       type="button"
                       disabled={pagina <= 1}
-                      onClick={() => setPagina(pagina - 1)}
+                      onClick={() => irParaPagina(pagina - 1)}
                       className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
                     >
                       Anterior
@@ -250,7 +286,7 @@ export default function AuditoriaAdmin() {
                     <button
                       type="button"
                       disabled={pagina >= totalPaginas}
-                      onClick={() => setPagina(pagina + 1)}
+                      onClick={() => irParaPagina(pagina + 1)}
                       className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
                     >
                       Próxima
