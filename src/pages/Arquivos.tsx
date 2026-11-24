@@ -163,23 +163,37 @@ export default function Arquivos() {
     if (nome) novaPasta(nome);
   }
 
-  // Executa a ação pedida pelo menu "+ Novo" da Sidebar
+  // Recebe ações da Sidebar e caminhos enviados pela busca da Home
   useEffect(() => {
     const state = location.state as {
       sidebarAction?: "new-folder" | "upload";
+      searchPath?: { id: number; name: string }[];
     } | null;
 
     const action = state?.sidebarAction;
+    const searchPath = state?.searchPath;
 
-    if (!action || acaoProcessada.current === location.key) return;
+    const temAcao = Boolean(action);
+    const temCaminho = Array.isArray(searchPath);
+
+    if ((!temAcao && !temCaminho) || acaoProcessada.current === location.key) {
+      return;
+    }
 
     acaoProcessada.current = location.key;
 
-    // limpa a ação para não repetir ao atualizar a página
+    // Limpa o estado para não repetir a ação ao atualizar a página.
     navigate(location.pathname, { replace: true, state: null });
+
+    if (temCaminho) {
+      setCaminho(searchPath);
+      reset({ query: "" });
+      setEscopo("all");
+    }
 
     if (action === "new-folder") handleNovaPasta();
     if (action === "upload") inputRef.current?.click();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key, location.pathname, location.state, navigate]);
 
@@ -326,7 +340,7 @@ export default function Arquivos() {
             className="rounded-lg border border-white/10 bg-[#161616] px-3 py-3 text-sm sm:py-2"
           >
             <option value="all">Todos os arquivos</option>
-            <option value="pasta">Nesta pasta</option>
+            <option value="folder">Nesta pasta</option>
           </select>
         </form>
 
@@ -343,7 +357,7 @@ export default function Arquivos() {
                 onClick={() => reset({ query: "" })}
                 className="text-blue-400 hover:text-blue-300"
               >
-                limpar busca
+                Limpar Busca
               </button>
             </p>
 
@@ -532,7 +546,7 @@ export default function Arquivos() {
                 {files.map((file) => (
                   <article
                     key={file.id}
-                    className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                    className="min-w-0 rounded-xl border border-white/10 bg-white/3 p-3"
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       <FileIcon type={file.type} />

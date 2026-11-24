@@ -112,8 +112,7 @@ export default function AuditoriaAdmin() {
     return () => {
       ativo = false;
     };
-    carregar();
-  }, [carregar]);
+  });
 
   // Handler de clique pode chamar setState à vontade
   function irParaPagina(nova: number) {
@@ -207,7 +206,7 @@ export default function AuditoriaAdmin() {
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
+          <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
             {carregando ? (
               <p className="py-10 text-center text-sm text-gray-500">
                 Carregando...
