@@ -63,7 +63,7 @@ function dataHora(iso: string) {
 function csvCell(v: string | null | undefined) {
   return `"${(v ?? "").replace(/"/g, '""')}"`;
 }
-;
+
 export default function AuditoriaAdmin() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [pagina, setPagina] = useState(1);
@@ -73,7 +73,6 @@ export default function AuditoriaAdmin() {
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    
     try {
       const r = await api.get<AuditResponse>(
         `/admin/audit?page=${pagina}&limit=${POR_PAGINA}`,
