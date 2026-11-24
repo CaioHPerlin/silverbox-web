@@ -14,5 +14,5 @@ export function useCota() {
     window.addEventListener(EVENTO_COTA, atualizar);
     return () => window.removeEventListener(EVENTO_COTA, atualizar);
   }, [atualizar]);
-  return { cota: error ? null : value, carregandoCota: loading, atualizar };
+  return { cota: error ? null : value, carregandoCota: loading, erroCota: error, atualizar };
 }
