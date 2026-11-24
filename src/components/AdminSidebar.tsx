@@ -37,25 +37,6 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
-function CloudIcon() {
-  return (
-    <svg
-      className="h-5 w-5 shrink-0 text-blue-400"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 15a4 4 0 004 4h9a5 5 0 001-9.9A6 6 0 006 9.1 4 4 0 003 15z"
-      />
-    </svg>
-  );
-}
-
 function HomeIcon() {
   return (
     <svg
@@ -193,7 +174,6 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
           icon={<SystemIcon />}
           onNavigate={onNavigate}
         />
-        
       </div>
     </nav>
   );
@@ -273,7 +253,11 @@ export default function AdminSidebar() {
       {/* Menu para celular e tablet */}
       <header className="relative z-40 flex w-full items-center justify-between border-b border-white/10 bg-[#0b1120] px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
-          <CloudIcon />
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Silverbox"
+            className="h-9 w-9 object-contain"
+          />
           <span className="font-semibold text-white">Silverbox</span>
         </div>
 
@@ -340,7 +324,11 @@ export default function AdminSidebar() {
       >
         <div className="mb-4 flex items-center justify-between px-2 py-2">
           <div className="flex items-center gap-2">
-            <CloudIcon />
+            <img
+              src="/minha-nuvem-logo.png"
+              alt="Logo Silverbox"
+              className="h-9 w-9 object-contain"
+            />
             <span className="font-semibold text-white">Silverbox</span>
           </div>
           <button
@@ -382,17 +370,19 @@ export default function AdminSidebar() {
       </aside>
 
       {/* Sidebar permanente no computador */}
-      <aside className="hidden min-h-screen w-56 shrink-0 border-r border-white/10 p-4 md:block lg:w-64">
+      <aside className="sticky top-0 z-40 hidden h-screen w-56 shrink-0 self-start flex-col overflow-y-auto border-r border-white/10 bg-[#1c1c1c] p-4 md:flex lg:w-64">
         <div className="mb-4 flex items-center gap-2 px-2 py-2">
-          <CloudIcon />
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Silverbox"
+            className="h-9 w-9 object-contain"
+          />
           <h1 className="font-semibold text-white">Silverbox</h1>
         </div>
-
         <span className="mb-6 inline-block rounded-md bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
           Painel administrativo
         </span>
-
-        <div className="flex min-h-[calc(100vh-7rem)] flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <Navigation />
           <AdminAccount
             name={name}

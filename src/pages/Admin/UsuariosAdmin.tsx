@@ -196,8 +196,12 @@ export default function UsuariosAdmin() {
 
   useEffect(() => {
     let ativo = true;
-    void Promise.resolve().then(() => { if (ativo) return carregar(); });
-    return () => { ativo = false; };
+    void Promise.resolve().then(() => {
+      if (ativo) return carregar();
+    });
+    return () => {
+      ativo = false;
+    };
   }, [carregar]);
 
   // executa uma ação do plugin, mostra o erro e recarrega a lista
@@ -232,7 +236,7 @@ export default function UsuariosAdmin() {
       const r = await authClient.admin.setRole({ userId: u.id, role: novo });
       if (!r.error) await authClient.admin.revokeUserSessions({ userId: u.id });
       return r;
-  });
+    });
   }
 
   const colunas = "grid-cols-[1fr_130px_110px_90px]";
@@ -287,9 +291,8 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
-
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>

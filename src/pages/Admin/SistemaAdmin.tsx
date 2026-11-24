@@ -62,8 +62,12 @@ export default function SistemaAdmin() {
 
   useEffect(() => {
     let ativo = true;
-    void Promise.resolve().then(() => { if (ativo) return verificar(); });
-    return () => { ativo = false; };
+    void Promise.resolve().then(() => {
+      if (ativo) return verificar();
+    });
+    return () => {
+      ativo = false;
+    };
   }, [verificar]);
 
   const percent = cota
@@ -73,7 +77,7 @@ export default function SistemaAdmin() {
   const estadoAtual = textoEstado[estado];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">

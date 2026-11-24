@@ -201,9 +201,8 @@ export default function Arquivos() {
   const itemVazio = !carregando && pastas.length === 0 && files.length === 0;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
-
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl font-semibold sm:text-2xl">Meus arquivos</h1>

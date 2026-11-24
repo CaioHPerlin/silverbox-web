@@ -447,7 +447,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Sidebar permanente no computador */}
-      <aside className="hidden min-h-screen w-56 shrink-0 border-r border-white/10 bg-[#1c1c1c] p-4 md:block lg:w-64">
+      <aside className="sticky top-0 z-40 hidden h-screen w-56 shrink-0 self-start flex-col overflow-y-auto border-r border-white/10 bg-[#1c1c1c] p-4 md:flex lg:w-64">
         <div className="mb-6 flex items-center gap-2 px-2 py-2">
           <img
             src="/minha-nuvem-logo.png"
@@ -456,8 +456,7 @@ export default function Sidebar() {
           />
           <h1 className="font-medium text-white">Silverbox</h1>
         </div>
-
-        <div className="flex min-h-[calc(100vh-5rem)] flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           <NewMenu onAction={handleNewAction} />
           <Navigation admin={admin} />
           <AccountUsage cota={cota} />
