@@ -61,7 +61,9 @@ function dataHora(iso: string) {
 }
 
 function csvCell(v: string | null | undefined) {
-  return `"${(v ?? "").replace(/"/g, '""')}"`;
+  let s = v ?? "";
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; // neutraliza fórmulas
+  return `"${s.replace(/"/g, '""')}"`;
 }
 
 export default function AuditoriaAdmin() {
@@ -89,6 +91,8 @@ export default function AuditoriaAdmin() {
       })
       .catch((e) => {
         if (cancelado) return;
+        setLogs([]);
+        setTotal(0);
         if (e instanceof ApiError && e.status === 404) setPendente(true);
         else if (e instanceof ApiError && e.status === 403)
           setErro("Você não tem permissão para ver a auditoria.");
@@ -104,16 +108,6 @@ export default function AuditoriaAdmin() {
     };
   }, [pagina]);
 
-  useEffect(() => {
-    let ativo = true;
-    void Promise.resolve().then(() => {
-      if (ativo) return carregar();
-    });
-    return () => {
-      ativo = false;
-    };
-  });
-
   // Handler de clique pode chamar setState à vontade
   function irParaPagina(nova: number) {
     setCarregando(true);
@@ -122,15 +116,7 @@ export default function AuditoriaAdmin() {
 
   function handleExport() {
     const linhas = [
-      [
-        "Data/Hora",
-        "Nome",
-        "E-mail",
-        "Ação",
-        "IP",
-        "Detalhes",
-        "Request ID",
-      ].join(";"),
+      ["Data/Hora", "Nome", "E-mail", "Ação", "IP", "Detalhes", "Request ID"].join(";"),
       ...logs.map((l) =>
         [
           csvCell(new Date(l.createdAt).toLocaleString("pt-BR")),
@@ -159,8 +145,9 @@ export default function AuditoriaAdmin() {
   const cor = (l: AuditLog) => (ehErro(l) ? "text-red-500" : "text-white");
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
+
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -206,11 +193,9 @@ export default function AuditoriaAdmin() {
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
             {carregando ? (
-              <p className="py-10 text-center text-sm text-gray-500">
-                Carregando...
-              </p>
+              <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
             ) : logs.length === 0 ? (
               <p className="py-10 text-center text-sm text-gray-500">
                 Nenhum registro de auditoria.
@@ -246,9 +231,7 @@ export default function AuditoriaAdmin() {
                       <span className="truncate text-sm text-gray-300">
                         {dataHora(l.createdAt)}
                       </span>
-                      <span className="text-sm text-gray-500">
-                        {l.ipAddress ?? "—"}
-                      </span>
+                      <span className="text-sm text-gray-500">{l.ipAddress ?? "—"}</span>
                     </div>
                   ))}
                 </div>
@@ -256,10 +239,7 @@ export default function AuditoriaAdmin() {
                 {/* Cartões: celular e tablet */}
                 <div className="flex flex-col gap-2 lg:hidden">
                   {logs.map((l) => (
-                    <div
-                      key={l.id}
-                      className="rounded-xl border border-white/10 px-4 py-3"
-                    >
+                    <div key={l.id} className="rounded-xl border border-white/10 px-4 py-3">
                       <div className="flex items-start justify-between gap-2">
                         <p className="truncate text-sm font-medium">
                           {l.actorName ?? "—"}
@@ -272,13 +252,9 @@ export default function AuditoriaAdmin() {
                         {textoDaAcao(l.action)}
                       </p>
                       {l.details && (
-                        <p className="mt-1 break-words text-xs text-gray-400">
-                          {l.details}
-                        </p>
+                        <p className="mt-1 break-words text-xs text-gray-400">{l.details}</p>
                       )}
-                      <p className="mt-1 text-xs text-gray-500">
-                        {l.ipAddress ?? "—"}
-                      </p>
+                      <p className="mt-1 text-xs text-gray-500">{l.ipAddress ?? "—"}</p>
                     </div>
                   ))}
                 </div>
