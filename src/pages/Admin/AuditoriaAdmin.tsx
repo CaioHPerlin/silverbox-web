@@ -27,28 +27,57 @@ interface AuditResponse {
 
 const POR_PAGINA = 50;
 
-// Complete com os códigos reais que aparecerem na tela
 const ACOES: Record<string, string> = {
-  "file.upload": "Upload de arquivo",
-  "file.download": "Download de arquivo",
-  "file.delete": "Moveu arquivo para a lixeira",
-  "file.restore": "Restaurou arquivo",
-  "file.permanent_delete": "Excluiu arquivo definitivamente",
-  "share.create": "Criou link de compartilhamento",
-  "share.revoke": "Revogou link de compartilhamento",
-  "auth.login": "Login",
-  "auth.logout": "Logout",
+  upload: "Enviou arquivo",
+  file_update: "Alterou arquivo",
+  trash: "Moveu arquivo para a lixeira",
+  restore: "Restaurou arquivo",
+  permanent_delete: "Excluiu arquivo definitivamente",
+  avatar_update: "Atualizou a foto de perfil",
+  avatar_delete: "Removeu a foto de perfil",
+  folder_create: "Criou pasta",
+  folder_update: "Alterou pasta",
+  folder_delete: "Excluiu pasta",
+  admin_user_create: "Criou usuário",
+  admin_user_delete: "Excluiu usuário",
+  admin_user_deletion_started: "Iniciou exclusão de usuário",
+  admin_user_ban: "Bloqueou usuário",
+  admin_user_unban: "Desbloqueou usuário",
+  admin_user_role: "Alterou papel de usuário",
 };
 
 function textoDaAcao(action: string) {
   return ACOES[action] ?? action;
 }
 
-// Sem campo de resultado na API: destaca ações que parecem falha
-function ehErro(l: AuditLog) {
-  return /(denied|refus|recus|error|erro|fail|falh|forbidden)/i.test(
-    `${l.action} ${l.details ?? ""}`,
-  );
+// A API não tem campo de resultado: destaca ações destrutivas
+const DESTRUTIVAS = new Set([
+  "permanent_delete",
+  "admin_user_delete",
+  "admin_user_ban",
+  "folder_delete",
+]);
+
+function ehDestrutiva(l: AuditLog) {
+  return DESTRUTIVAS.has(l.action);
+}
+
+// "file:21;owner:15" -> "arquivo #21 · dono #15"
+function alvo(details: string | null) {
+  if (!details) return "";
+  const nomes: Record<string, string> = {
+    file: "arquivo",
+    user: "usuário",
+    folder: "pasta",
+    owner: "dono",
+  };
+  return details
+    .split(";")
+    .map((p) => {
+      const [k, v] = p.split(":");
+      return `${nomes[k] ?? k} #${v}`;
+    })
+    .join(" · ");
 }
 
 function dataHora(iso: string) {
@@ -142,8 +171,7 @@ export default function AuditoriaAdmin() {
   }
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const cor = (l: AuditLog) => (ehErro(l) ? "text-red-500" : "text-white");
-
+const cor = (l: AuditLog) => (ehDestrutiva(l) ? "text-red-500" : "text-white");
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
@@ -212,28 +240,33 @@ export default function AuditoriaAdmin() {
                     <span>Endereço IP</span>
                   </div>
                   {logs.map((l) => (
-                    <div
-                      key={l.id}
-                      className="grid grid-cols-[1fr_1.2fr_1.3fr_120px_140px] items-center gap-3 border-b border-white/5 px-2 py-4 transition-colors last:border-b-0 hover:bg-white/5"
-                    >
-                      <span className="truncate text-sm font-medium">
-                        {l.actorName ?? "—"}
-                      </span>
-                      <span className="truncate text-sm text-gray-300">
-                        {l.actorEmail ?? "—"}
-                      </span>
-                      <span
-                        className={`truncate text-sm font-medium ${cor(l)}`}
-                        title={l.details ?? undefined}
-                      >
+                  <div
+                    key={l.id}
+                    className="grid grid-cols-[1fr_1.2fr_1.3fr_120px_140px] items-center gap-3 border-b border-white/5 px-2 py-4 transition-colors last:border-b-0 hover:bg-white/5"
+                  >
+                    <span className="truncate text-sm font-medium">
+                      {l.actorName ?? "—"}
+                    </span>
+                    <span className="truncate text-sm text-gray-300">
+                      {l.actorEmail ?? "—"}
+                    </span>
+
+                    {/* coluna Ação: substitui o <span ... title=...> antigo */}
+                    <span className="min-w-0">
+                      <span className={`block truncate text-sm font-medium ${cor(l)}`}>
                         {textoDaAcao(l.action)}
                       </span>
-                      <span className="truncate text-sm text-gray-300">
-                        {dataHora(l.createdAt)}
+                      <span className="block truncate text-xs text-gray-500">
+                        {alvo(l.details)}
                       </span>
-                      <span className="text-sm text-gray-500">{l.ipAddress ?? "—"}</span>
-                    </div>
-                  ))}
+                    </span>
+
+                    <span className="truncate text-sm text-gray-300">
+                      {dataHora(l.createdAt)}
+                    </span>
+                    <span className="text-sm text-gray-500">{l.ipAddress ?? "—"}</span>
+                  </div>
+                ))}
                 </div>
 
                 {/* Cartões: celular e tablet */}
@@ -252,7 +285,7 @@ export default function AuditoriaAdmin() {
                         {textoDaAcao(l.action)}
                       </p>
                       {l.details && (
-                        <p className="mt-1 break-words text-xs text-gray-400">{l.details}</p>
+                        <p className="mt-1 break-words text-xs text-gray-400">{alvo(l.details)}</p>
                       )}
                       <p className="mt-1 text-xs text-gray-500">{l.ipAddress ?? "—"}</p>
                     </div>
