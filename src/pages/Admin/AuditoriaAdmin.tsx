@@ -63,7 +63,7 @@ function dataHora(iso: string) {
 function csvCell(v: string | null | undefined) {
   return `"${(v ?? "").replace(/"/g, '""')}"`;
 }
-
+;
 export default function AuditoriaAdmin() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [pagina, setPagina] = useState(1);
@@ -73,7 +73,7 @@ export default function AuditoriaAdmin() {
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    setCarregando(true);
+    
     try {
       const r = await api.get<AuditResponse>(
         `/admin/audit?page=${pagina}&limit=${POR_PAGINA}`,
@@ -95,6 +95,11 @@ export default function AuditoriaAdmin() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  function irParaPagina(nova: number) {
+  setCarregando(true);
+  setPagina(nova);
+}
 
   function handleExport() {
     const linhas = [
@@ -246,7 +251,7 @@ export default function AuditoriaAdmin() {
                     <button
                       type="button"
                       disabled={pagina <= 1}
-                      onClick={() => setPagina(pagina - 1)}
+                      onClick={() => irParaPagina(pagina - 1)}
                       className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
                     >
                       Anterior
@@ -257,7 +262,7 @@ export default function AuditoriaAdmin() {
                     <button
                       type="button"
                       disabled={pagina >= totalPaginas}
-                      onClick={() => setPagina(pagina + 1)}
+                      onClick={() => irParaPagina(pagina + 1)}
                       className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
                     >
                       Próxima
