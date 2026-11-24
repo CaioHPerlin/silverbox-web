@@ -15,6 +15,7 @@ import {
   moverParaLixeira,
   type ArquivoApi,
 } from "../services/files";
+import { buscarAvatar } from "../services/avatar";
 
 type ItemType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
 
@@ -103,6 +104,9 @@ export default function Home() {
   const [renamingFile, setRenamingFile] = useState<SelectedFile | null>(null);
   const [movingFile, setMovingFile] = useState<SelectedFile | null>(null);
 
+  //Avatar - foto de perfil
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
   const { register, control } = useForm<SearchForm>({
     defaultValues: { query: "" },
   });
@@ -113,6 +117,37 @@ export default function Home() {
   });
 
   const pesquisa = (valorPesquisa ?? "").trim().toLowerCase();
+
+  // Carrega a foto de perfil
+  useEffect(() => {
+    let cancelado = false;
+    let url: string | null = null;
+
+    async function carregarFoto() {
+      try {
+        const imagem = await buscarAvatar();
+
+        if (!imagem || cancelado) return;
+
+        url = URL.createObjectURL(imagem);
+        setAvatarUrl(url);
+      } catch {
+        if (!cancelado) {
+          setAvatarUrl(null);
+        }
+      }
+    }
+
+    carregarFoto();
+
+    return () => {
+      cancelado = true;
+
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function carregarArquivos() {
@@ -273,8 +308,16 @@ export default function Home() {
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-11 pr-3 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-sm font-semibold text-blue-400">
-            {getInitials(userName)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-500/20 text-sm font-semibold text-blue-400">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Foto de perfil"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getInitials(userName)
+            )}
           </div>
         </form>
 
