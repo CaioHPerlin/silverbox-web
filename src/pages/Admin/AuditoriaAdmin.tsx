@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Users } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
@@ -72,33 +72,43 @@ export default function AuditoriaAdmin() {
   const [pendente, setPendente] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
-    try {
-      const r = await api.get<AuditResponse>(
-        `/admin/audit?page=${pagina}&limit=${POR_PAGINA}`,
-      );
-      setLogs(r?.logs ?? []);
-      setTotal(r?.total ?? 0);
-      setPendente(false);
-      setErro(null);
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) setPendente(true);
-      else if (e instanceof ApiError && e.status === 403)
-        setErro("Você não tem permissão para ver a auditoria.");
-      else setErro(mensagemDeErro(e));
-    } finally {
-      setCarregando(false);
-    }
+  // Busca os logs sempre que a página muda.
+  // Todos os setState ficam dentro de callbacks (.then/.catch/.finally),
+  // que rodam depois da resposta: é o que o lint aceita dentro de um effect.
+  useEffect(() => {
+    let cancelado = false;
+
+    api
+      .get<AuditResponse>(`/admin/audit?page=${pagina}&limit=${POR_PAGINA}`)
+      .then((r) => {
+        if (cancelado) return;
+        setLogs(r?.logs ?? []);
+        setTotal(r?.total ?? 0);
+        setPendente(false);
+        setErro(null);
+      })
+      .catch((e) => {
+        if (cancelado) return;
+        if (e instanceof ApiError && e.status === 404) setPendente(true);
+        else if (e instanceof ApiError && e.status === 403)
+          setErro("Você não tem permissão para ver a auditoria.");
+        else setErro(mensagemDeErro(e));
+      })
+      .finally(() => {
+        if (!cancelado) setCarregando(false);
+      });
+
+    // se a página mudar antes da resposta chegar, ignora a resposta antiga
+    return () => {
+      cancelado = true;
+    };
   }, [pagina]);
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
+  // Handler de clique pode chamar setState à vontade
   function irParaPagina(nova: number) {
-  setCarregando(true);
-  setPagina(nova);
-}
+    setCarregando(true);
+    setPagina(nova);
+  }
 
   function handleExport() {
     const linhas = [
