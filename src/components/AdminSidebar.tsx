@@ -168,7 +168,7 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
       />
       <NavItem
         to="/admin/arquivos"
-        label="Meus arquivos"
+        label="Todos os arquivos"
         icon={<FolderIcon />}
         onNavigate={onNavigate}
       />
@@ -193,6 +193,7 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
           icon={<SystemIcon />}
           onNavigate={onNavigate}
         />
+        
       </div>
     </nav>
   );

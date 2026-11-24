@@ -228,9 +228,11 @@ export default function UsuariosAdmin() {
 
   function handlePapel(u: ApiUser, novo: Role) {
     if (novo === papelDe(u)) return;
-    executar(u.id, () =>
-      authClient.admin.setRole({ userId: u.id, role: novo }),
-    );
+    executar(u.id, async () => {
+      const r = await authClient.admin.setRole({ userId: u.id, role: novo });
+      if (!r.error) await authClient.admin.revokeUserSessions({ userId: u.id });
+      return r;
+  });
   }
 
   const colunas = "grid-cols-[1fr_130px_110px_90px]";
