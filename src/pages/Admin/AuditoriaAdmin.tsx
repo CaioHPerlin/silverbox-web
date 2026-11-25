@@ -145,7 +145,15 @@ export default function AuditoriaAdmin() {
 
   function handleExport() {
     const linhas = [
-      ["Data/Hora", "Nome", "E-mail", "Ação", "IP", "Detalhes", "Request ID"].join(";"),
+      [
+        "Data/Hora",
+        "Nome",
+        "E-mail",
+        "Ação",
+        "IP",
+        "Detalhes",
+        "Request ID",
+      ].join(";"),
       ...logs.map((l) =>
         [
           csvCell(new Date(l.createdAt).toLocaleString("pt-BR")),
@@ -171,7 +179,8 @@ export default function AuditoriaAdmin() {
   }
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-const cor = (l: AuditLog) => (ehDestrutiva(l) ? "text-red-500" : "text-white");
+  const cor = (l: AuditLog) =>
+    ehDestrutiva(l) ? "text-red-500" : "text-white";
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
@@ -221,9 +230,11 @@ const cor = (l: AuditLog) => (ehDestrutiva(l) ? "text-red-500" : "text-white");
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
+          <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
             {carregando ? (
-              <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
+              <p className="py-10 text-center text-sm text-gray-500">
+                Carregando...
+              </p>
             ) : logs.length === 0 ? (
               <p className="py-10 text-center text-sm text-gray-500">
                 Nenhum registro de auditoria.
@@ -240,39 +251,46 @@ const cor = (l: AuditLog) => (ehDestrutiva(l) ? "text-red-500" : "text-white");
                     <span>Endereço IP</span>
                   </div>
                   {logs.map((l) => (
-                  <div
-                    key={l.id}
-                    className="grid grid-cols-[1fr_1.2fr_1.3fr_120px_140px] items-center gap-3 border-b border-white/5 px-2 py-4 transition-colors last:border-b-0 hover:bg-white/5"
-                  >
-                    <span className="truncate text-sm font-medium">
-                      {l.actorName ?? "—"}
-                    </span>
-                    <span className="truncate text-sm text-gray-300">
-                      {l.actorEmail ?? "—"}
-                    </span>
-
-                    {/* coluna Ação: substitui o <span ... title=...> antigo */}
-                    <span className="min-w-0">
-                      <span className={`block truncate text-sm font-medium ${cor(l)}`}>
-                        {textoDaAcao(l.action)}
+                    <div
+                      key={l.id}
+                      className="grid grid-cols-[1fr_1.2fr_1.3fr_120px_140px] items-center gap-3 border-b border-white/5 px-2 py-4 transition-colors last:border-b-0 hover:bg-white/5"
+                    >
+                      <span className="truncate text-sm font-medium">
+                        {l.actorName ?? "—"}
                       </span>
-                      <span className="block truncate text-xs text-gray-500">
-                        {alvo(l.details)}
+                      <span className="truncate text-sm text-gray-300">
+                        {l.actorEmail ?? "—"}
                       </span>
-                    </span>
 
-                    <span className="truncate text-sm text-gray-300">
-                      {dataHora(l.createdAt)}
-                    </span>
-                    <span className="text-sm text-gray-500">{l.ipAddress ?? "—"}</span>
-                  </div>
-                ))}
+                      {/* coluna Ação: substitui o <span ... title=...> antigo */}
+                      <span className="min-w-0">
+                        <span
+                          className={`block truncate text-sm font-medium ${cor(l)}`}
+                        >
+                          {textoDaAcao(l.action)}
+                        </span>
+                        <span className="block truncate text-xs text-gray-500">
+                          {alvo(l.details)}
+                        </span>
+                      </span>
+
+                      <span className="truncate text-sm text-gray-300">
+                        {dataHora(l.createdAt)}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {l.ipAddress ?? "—"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Cartões: celular e tablet */}
                 <div className="flex flex-col gap-2 lg:hidden">
                   {logs.map((l) => (
-                    <div key={l.id} className="rounded-xl border border-white/10 px-4 py-3">
+                    <div
+                      key={l.id}
+                      className="rounded-xl border border-white/10 px-4 py-3"
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <p className="truncate text-sm font-medium">
                           {l.actorName ?? "—"}
@@ -285,9 +303,13 @@ const cor = (l: AuditLog) => (ehDestrutiva(l) ? "text-red-500" : "text-white");
                         {textoDaAcao(l.action)}
                       </p>
                       {l.details && (
-                        <p className="mt-1 break-words text-xs text-gray-400">{alvo(l.details)}</p>
+                        <p className="mt-1 break-words text-xs text-gray-400">
+                          {alvo(l.details)}
+                        </p>
                       )}
-                      <p className="mt-1 text-xs text-gray-500">{l.ipAddress ?? "—"}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {l.ipAddress ?? "—"}
+                      </p>
                     </div>
                   ))}
                 </div>

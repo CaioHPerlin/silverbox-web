@@ -92,9 +92,18 @@ export type LinkApi = {
   fileName: string;
   sizeBytes: number;
   mimeType: string | null;
+  permission: string;
+  status: string;
   expiresAt: string;
   revokedAt: string | null;
   createdAt: string;
+};
+
+export type ListaMeusLinksResponse = {
+  shares: LinkApi[];
+  page: number;
+  limit: number;
+  total: number;
 };
 
 export type StatusLink = "ativo" | "expirado" | "revogado";
@@ -104,21 +113,63 @@ export function statusDoLink(l: {
   revokedAt: string | null;
 }): StatusLink {
   if (l.revokedAt) return "revogado";
+
   return new Date(l.expiresAt).getTime() <= Date.now() ? "expirado" : "ativo";
 }
+type ShareListaItemApi = {
+  id: number;
+  permission: string;
+  status: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+  file: {
+    id: number;
+    originalName: string;
+    mimeType: string | null;
+    sizeBytes: number;
+  };
+};
+type RespostaSharesApi = {
+  shares: ShareListaItemApi[];
+  page: number;
+  limit: number;
+  total: number;
+};
 
-export async function listarMeusLinks(): Promise<LinkApi[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const r = await api.get<{ shares?: any[] }>("/shares");
-  return (r?.shares ?? []).map((s) => ({
-    id: s.id,
-    fileId: s.fileId ?? s.file?.id,
-    fileName:
-      s.fileName ?? s.originalName ?? s.name ?? s.file?.originalName ?? "(sem nome)",
-    sizeBytes: s.sizeBytes ?? s.file?.sizeBytes ?? 0,
-    mimeType: s.mimeType ?? s.file?.mimeType ?? null,
-    expiresAt: s.expiresAt,
-    revokedAt: s.revokedAt ?? null,
-    createdAt: s.createdAt,
-  }));
+export async function listarMeusLinks(
+  page = 1,
+  limit = 50,
+  query = "",
+): Promise<ListaMeusLinksResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (query.trim()) {
+    params.set("q", query.trim());
+  }
+
+  const resposta = await api.get<RespostaSharesApi>(
+    `/shares?${params.toString()}`,
+  );
+
+  return {
+    shares: resposta.shares.map((share) => ({
+      id: share.id,
+      fileId: share.file.id,
+      fileName: share.file.originalName,
+      sizeBytes: share.file.sizeBytes,
+      mimeType: share.file.mimeType,
+      permission: share.permission,
+      status: share.status,
+      expiresAt: share.expiresAt,
+      revokedAt: share.revokedAt,
+      createdAt: share.createdAt,
+    })),
+    page: resposta.page,
+    limit: resposta.limit,
+    total: resposta.total,
+  };
 }
