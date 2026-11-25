@@ -8,6 +8,7 @@ export type UsuarioAdmin = {
   banned: boolean | null;
   deletionPending: boolean;
   quotaLimitBytes: string; // BigInt em texto: converter com Number()
+  // usedBytes?: string; // ainda não existe na API
   createdAt: string;
 };
 
@@ -32,7 +33,7 @@ export function listarUsuarios(
   signal?: AbortSignal,
 ) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-  if (q) params.set("q", q); // AJUSTAR: nome do parâmetro de busca
+  if (q) params.set("q", q); 
   return api.get<ListaUsuarios>(`/admin/users?${params}`, { signal });
 }
 
@@ -51,8 +52,17 @@ export function editarUsuario(id: string, dados: EdicaoUsuario) {
   return api.patch<{ user: UsuarioAdmin }>(`/admin/users/${id}`, dados);
 }
 
+export function alterarPapel(id: string, role: "user" | "admin") {
+  return editarUsuario(id, { role });
+}
+
+export function definirBloqueio(id: string, banned: boolean) {
+  return editarUsuario(id, { banned });
+}
+
 // A tela trabalha em GB; a API quer bytes em texto
 export function gbParaBytes(gb: number): string {
+  if (!Number.isFinite(gb) || gb < 0) throw new Error("Cota inválida");
   return BigInt(Math.round(gb * 1024 ** 3)).toString();
 }
 
