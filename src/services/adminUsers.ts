@@ -41,12 +41,19 @@ export function criarUsuario(dados: NovoUsuario) {
   return api.post<{ user: UsuarioAdmin }>("/admin/users", dados);
 }
 
-// AJUSTAR: rota, corpo e unidade da cota (aqui: bytes)
-export function editarUsuario(
-  id: string,
-  dados: { name?: string; quotaLimitBytes?: number },
-) {
+export type EdicaoUsuario = {
+  role?: "user" | "admin";
+  banned?: boolean;
+  quotaLimitBytes?: string; // BigInt em texto
+};
+
+export function editarUsuario(id: string, dados: EdicaoUsuario) {
   return api.patch<{ user: UsuarioAdmin }>(`/admin/users/${id}`, dados);
+}
+
+// A tela trabalha em GB; a API quer bytes em texto
+export function gbParaBytes(gb: number): string {
+  return BigInt(Math.round(gb * 1024 ** 3)).toString();
 }
 
 export function paraBytes(v: string | null | undefined): number {
