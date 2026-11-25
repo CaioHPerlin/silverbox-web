@@ -2,9 +2,11 @@ import { API_URL } from "../config/api";
 
 class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -20,15 +22,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    let message = `Erro ${response.status}`;
-    try {
-      const body = await response.json();
-      message = body.message ?? body.error ?? message;
-    } catch {
-      // resposta sem corpo JSON, mantém a mensagem padrão
-    }
-    throw new ApiError(message, response.status);
+  let message = `Erro ${response.status}`;
+  let code: string | undefined;
+  try {
+    const body = await response.json();
+    message = body.message ?? body.error ?? message;
+    code = body.code;
+  } catch {
+    // resposta sem corpo JSON
   }
+  throw new ApiError(message, response.status, code);
+}
 
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
@@ -44,8 +48,8 @@ export const api = {
     request<T>(path, { ...options, method: "PUT", body: body ? JSON.stringify(body) : undefined }),
 
   patch: <T>(path: string, body?: unknown, options?: RequestInit) =>
-    request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
-
+  request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+  
   delete: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "DELETE" }),
 
   // upload cru: bytes no corpo e dados do arquivo em cabeçalhos (sem FormData)
