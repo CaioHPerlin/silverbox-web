@@ -172,8 +172,8 @@ function EditarForm({
     setErro(null);
     try {
       await editarUsuario(usuario.id, {
-        name: nome.trim(),
-        quotaLimitBytes: Math.round(gb * 1024 ** 3),
+        //name: nome.trim(),
+        quotaLimitBytes: String(Math.round(gb * 1024 ** 3)),
       });
     } catch (err) {
       setSalvando(false);
