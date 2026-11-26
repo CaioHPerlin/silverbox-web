@@ -3,7 +3,7 @@ import { Ban, CheckCircle2, Pencil, Trash2, UserPlus } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { authClient } from "../../lib/authClient";
 import { mensagemDaApi } from "../../lib/errorMessages";
-import { passwordGuidance, validarTamanhoDaSenha } from "../../lib/passwordPolicy";
+import { passwordGuidance, validarSenha } from "../../lib/passwordPolicy";
 import { formatBytes } from "../../lib/format";
 import { temPapel } from "../../lib/roles";
 import { useUsuario } from "../../hooks/useUsuario";
@@ -67,7 +67,7 @@ function NovoUsuarioModal({
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    const senhaValida = validarTamanhoDaSenha(senha);
+    const senhaValida = validarSenha(senha);
     if (senhaValida !== true) {
       setErro(senhaValida);
       return;

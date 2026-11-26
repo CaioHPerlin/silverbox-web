@@ -1,4 +1,4 @@
-import { maxPasswordLength, minPasswordLength } from "./passwordPolicy.ts";
+import { passwordErrors } from "./passwordPolicy.ts";
 
 type RemoteError = {
   status?: number;
@@ -18,9 +18,7 @@ const byCode = new Map([
   ["INVALID_TOKEN", "Este link é inválido ou expirou."],
   ["USER_ALREADY_EXISTS", duplicateEmail],
   ["USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL", duplicateEmail],
-  ["PASSWORD_TOO_SHORT", `Use pelo menos ${minPasswordLength} caracteres.`],
-  ["PASSWORD_TOO_LONG", `Use no máximo ${maxPasswordLength} caracteres.`],
-  ["PASSWORD_TOO_COMMON", "Essa senha é muito comum ou previsível. Escolha uma frase mais difícil de adivinhar."],
+  ...Object.entries(passwordErrors),
 ]);
 
 // Algumas rotas REST ainda enviam apenas a mensagem, inclusive em versões já publicadas.

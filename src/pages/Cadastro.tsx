@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
 import { authUrl, safeReturnTo } from "../lib/authNavigation";
 import { mensagemDaApi } from "../lib/errorMessages";
-import { passwordGuidance, validarTamanhoDaSenha } from "../lib/passwordPolicy";
+import { passwordGuidance, validarSenha } from "../lib/passwordPolicy";
 import type { CadastroFormData } from "../types";
 
 export default function Cadastro() {
@@ -133,7 +133,7 @@ export default function Cadastro() {
             className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
             {...register("password", {
               required: "Informe uma senha.",
-              validate: validarTamanhoDaSenha,
+              validate: validarSenha,
             })}
           />
           <p id="signup-password-guidance" className="mb-1 text-xs text-zinc-400">{passwordGuidance}</p>

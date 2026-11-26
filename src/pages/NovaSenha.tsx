@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "../lib/authClient";
 import { mensagemDaApi } from "../lib/errorMessages";
-import { passwordGuidance, validarTamanhoDaSenha } from "../lib/passwordPolicy";
+import { passwordGuidance, validarSenha } from "../lib/passwordPolicy";
 
 interface NovaSenhaFormData {
   password: string;
@@ -116,7 +116,7 @@ export default function NovaSenha() {
                 className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
                 {...register("password", {
                   required: "Informe a nova senha.",
-                  validate: validarTamanhoDaSenha,
+                  validate: validarSenha,
                 })}
               />
               <p id="reset-password-guidance" className="mb-1 text-xs text-zinc-400">{passwordGuidance}</p>
