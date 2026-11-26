@@ -56,15 +56,14 @@ export default function DashboardAdmin() {
       : 0;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
-
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Dashboard</h1>
 
         <AdminMetricsSection
           title="Métricas globais"
-          description="Visão geral do uso do Silverbox e atividade diária."
+          description="Os cartões mostram os totais atuais. O período se aplica ao gráfico de atividade diária (UTC)."
           period={period}
           onPeriodChange={setPeriod}
           loading={loading}
@@ -73,6 +72,23 @@ export default function DashboardAdmin() {
         >
           {metrics && (
             <div className="space-y-6">
+              {metrics.users.blocked > 0 && (
+                <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-amber-200">
+                    <strong>{formatCount(metrics.users.blocked)}</strong>{" "}
+                    {metrics.users.blocked === 1
+                      ? "conta está bloqueada."
+                      : "contas estão bloqueadas."}
+                  </p>
+                  <Link
+                    to="/admin/usuarios"
+                    className="shrink-0 rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-500/15"
+                  >
+                    Ver usuários
+                  </Link>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <StatCard
                   label="Usuários"
@@ -107,7 +123,7 @@ export default function DashboardAdmin() {
                 firstValue="uploads"
                 secondValue="downloads"
                 firstLabel="Uploads"
-                secondLabel="Downloads"
+                secondLabel="Downloads e prévias públicas"
               />
             </div>
           )}

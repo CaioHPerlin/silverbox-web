@@ -15,7 +15,7 @@ export function AdminMetricsFilter({
     <div
       role="group"
       className="flex items-center gap-1 rounded-lg border border-white/10 p-1"
-      aria-label="Período das métricas"
+      aria-label="Período do gráfico"
     >
       {([7, 30] as const).map((days) => (
         <button

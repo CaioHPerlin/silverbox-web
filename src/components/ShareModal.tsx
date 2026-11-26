@@ -5,8 +5,9 @@ import {
   listarLinksCompartilhados,
   mensagemErroShare,
   revogarLinkCompartilhado,
-  statusDoLink,
   type ShareApi,
+  type PermissaoShare,
+  type StatusLink,
 } from "../services/shares";
 
 interface Props {
@@ -35,16 +36,34 @@ function dataHora(iso: string) {
   });
 }
 
+function statusDoLinkArquivo(link: ShareApi): StatusLink {
+  if (link.revokedAt) return "revogado";
+
+  if (new Date(link.expiresAt).getTime() <= Date.now()) {
+    return "expirado";
+  }
+
+  return "ativo";
+}
+
 export function ShareModal({ file, onClose }: Props) {
   if (!file) return null;
   return <ShareModalContent key={file.id} file={file} onClose={onClose} />;
 }
 
-function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props["file"]> }) {
+function ShareModalContent({
+  file,
+  onClose,
+}: Props & { file: NonNullable<Props["file"]> }) {
   const fileId = Number(file.id);
 
   const [prazo, setPrazo] = useState<number>(EXPIRACAO_SHARE.UM_DIA);
-  const [gerado, setGerado] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [permissao, setPermissao] = useState<PermissaoShare>("view");
+  const [gerado, setGerado] = useState<{
+    url: string;
+    expiresAt: string;
+    permission: PermissaoShare;
+  } | null>(null);
   const [links, setLinks] = useState<ShareApi[]>([]);
   const [gerando, setGerando] = useState(false);
   const [copiado, setCopiado] = useState(false);
@@ -62,8 +81,12 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
   // O conteúdo é remontado para cada arquivo; só a consulta precisa de um efeito.
   useEffect(() => {
     let ativo = true;
-    void Promise.resolve().then(() => { if (ativo) return carregarLinks(); });
-    return () => { ativo = false; };
+    void Promise.resolve().then(() => {
+      if (ativo) return carregarLinks();
+    });
+    return () => {
+      ativo = false;
+    };
   }, [carregarLinks]);
 
   async function gerar() {
@@ -72,8 +95,12 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
     setErro(null);
     setCopiado(false);
     try {
-      const r = await criarLinkCompartilhamento(fileId, prazo);
-      setGerado({ url: r.url, expiresAt: r.expiresAt });
+      const r = await criarLinkCompartilhamento(fileId, prazo, permissao);
+      setGerado({
+        url: r.url,
+        expiresAt: r.expiresAt,
+        permission: r.permission,
+      });
       await carregarLinks();
     } catch (e) {
       setErro(mensagemErroShare(e));
@@ -94,7 +121,8 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
 
   async function revogar(shareId: number) {
     if (fileId === null) return;
-    if (!window.confirm("Revogar este link? Quem tem o link perde o acesso.")) return;
+    if (!window.confirm("Revogar este link? Quem tem o link perde o acesso."))
+      return;
     try {
       await revogarLinkCompartilhado(fileId, shareId);
       setGerado(null); // o link recém-criado pode ter sido o revogado
@@ -140,11 +168,11 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
         )}
 
         <p className="mb-3 text-sm text-gray-400">
-          Crie um link temporário. Quem tiver o link baixa o arquivo sem precisar
-          de login.
+          Crie um link temporário e escolha se a pessoa poderá visualizar ou
+          baixar o arquivo.
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select
             value={prazo}
             onChange={(e) => setPrazo(Number(e.target.value))}
@@ -157,6 +185,17 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
               </option>
             ))}
           </select>
+
+          <select
+            value={permissao}
+            onChange={(e) => setPermissao(e.target.value as PermissaoShare)}
+            aria-label="Permissão do link"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
+          >
+            <option value="view">Visualização</option>
+            <option value="download">Download</option>
+          </select>
+
           <button
             type="button"
             onClick={gerar}
@@ -172,6 +211,10 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
             <p className="mb-2 text-xs text-gray-400">
               Copie agora: o link só aparece desta vez. Expira em{" "}
               {dataHora(gerado.expiresAt)}.
+            </p>
+            <p className="mb-2 text-xs text-gray-400">
+              Permissão:{" "}
+              {gerado.permission === "view" ? "Visualização" : "Download"}
             </p>
             <div className="flex gap-2">
               <input
@@ -203,14 +246,16 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
               </p>
             ) : (
               links.map((l) => {
-                const status = statusDoLink(l);
+                const status = statusDoLinkArquivo(l);
                 return (
                   <div
                     key={l.id}
                     className="flex items-center justify-between gap-2 border-b border-white/5 px-3 py-2 text-sm last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <p className={`text-xs font-medium ${estiloStatus[status]}`}>
+                      <p
+                        className={`text-xs font-medium ${estiloStatus[status]}`}
+                      >
                         {status === "ativo"
                           ? "Ativo"
                           : status === "expirado"
@@ -218,7 +263,8 @@ function ShareModalContent({ file, onClose }: Props & { file: NonNullable<Props[
                             : "Revogado"}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Criado {dataHora(l.createdAt)} · expira {dataHora(l.expiresAt)}
+                        Criado {dataHora(l.createdAt)} · expira{" "}
+                        {dataHora(l.expiresAt)}
                       </p>
                     </div>
                     {status === "ativo" && (

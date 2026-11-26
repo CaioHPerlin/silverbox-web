@@ -12,5 +12,6 @@ test("formata bytes decimais em português e respeita as fronteiras de unidade",
 });
 
 test("formata contagens de bytes acima do limite seguro sem perder precisão", () => {
-  assert.equal(formatDecimalBytes("9567199254740993000"), "9,6 EB");
+  assert.equal(formatDecimalBytes("999949999999999999"), "999,9 PB");
+  assert.equal(formatDecimalBytes("999950000000000000"), "1,0 EB");
 });

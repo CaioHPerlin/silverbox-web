@@ -16,11 +16,14 @@ export function useBusca(
   escopo: EscopoBusca,
   folderId: number | null,
 ) {
+  const termoAtual = termo.trim();
+
   const [q, setQ] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
 
+  const chaveBusca = JSON.stringify([q, escopo, folderId]);
+
   // a página volta para 1 quando termo, escopo ou pasta mudam
-  const chaveBusca = `${q}|${escopo}|${folderId}`;
   const [estadoPagina, setEstadoPagina] = useState({
     chave: chaveBusca,
     pagina: 1,
@@ -29,14 +32,15 @@ export function useBusca(
   const setPagina = (p: number) =>
     setEstadoPagina({ chave: chaveBusca, pagina: p });
 
-  const chaveRequisicao = `${chaveBusca}|${pagina}`;
+  const chaveRequisicao = JSON.stringify([chaveBusca, pagina]);
 
   // debounce de 300 ms (setState dentro do callback do timer é permitido)
   useEffect(() => {
-    const t = setTimeout(() => setQ(termo.trim()), 300);
+    const t = setTimeout(() => setQ(termoAtual), termoAtual ? 300 : 0);
     return () => clearTimeout(t);
-  }, [termo]);
+  }, [termoAtual]);
 
+  // Busca paginada no servidor.
   useEffect(() => {
     if (!q) return;
 
@@ -65,10 +69,13 @@ export function useBusca(
   }, [q, escopo, folderId, pagina, chaveRequisicao]);
 
   // só há busca ativa se o campo tem texto e o debounce já aplicou o termo
-  const ativa = termo.trim().length > 0 && q.length > 0;
+  const ativa = termo.length > 0;
 
-  // só usa o resultado se ele pertence à requisição atual (nunca mostra obsoleto)
-  const atual = ativa && resultado?.chave === chaveRequisicao ? resultado : null;
+  // Impede que resultados de termos anteriores sejam exibidos.
+  const atual =
+    ativa && q === termoAtual && resultado?.chave === chaveRequisicao
+      ? resultado
+      : null;
 
   return {
     q,
@@ -79,6 +86,9 @@ export function useBusca(
     carregando: ativa && atual === null,
     pagina,
     setPagina,
-    totalPaginas: Math.max(1, Math.ceil((atual?.total ?? 0) / POR_PAGINA_BUSCA)),
+    totalPaginas: Math.max(
+      1,
+      Math.ceil((atual?.total ?? 0) / POR_PAGINA_BUSCA),
+    ),
   };
 }

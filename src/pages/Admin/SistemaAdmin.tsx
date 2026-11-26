@@ -71,9 +71,13 @@ export default function SistemaAdmin() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    void Promise.resolve().then(() => { if (active) return verificar(); });
-    return () => { active = false; };
+    let ativo = true;
+    void Promise.resolve().then(() => {
+      if (ativo) return verificar();
+    });
+    return () => {
+      ativo = false;
+    };
   }, [verificar]);
 
   const usedPercent =
@@ -87,7 +91,7 @@ export default function SistemaAdmin() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -101,7 +105,8 @@ export default function SistemaAdmin() {
           <button
             type="button"
             onClick={atualizarTudo}
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-blue-400"
+            disabled={estado === "verificando"}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors enabled:hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-blue-400 disabled:opacity-50"
           >
             Atualizar
           </button>
@@ -127,7 +132,7 @@ export default function SistemaAdmin() {
 
         <AdminMetricsSection
           title="Métricas globais"
-          description="Armazenamento, arquivos e tráfego do sistema."
+          description="Os cartões mostram os totais atuais. O período se aplica ao gráfico de tráfego diário (UTC)."
           period={period}
           onPeriodChange={setPeriod}
           loading={loading}
@@ -198,7 +203,7 @@ export default function SistemaAdmin() {
                 firstValue="uploadBytes"
                 secondValue="downloadBytes"
                 firstLabel="Uploads"
-                secondLabel="Downloads"
+                secondLabel="Downloads e prévias públicas"
                 byteValues
               />
             </div>

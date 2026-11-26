@@ -8,10 +8,13 @@ export type ShareApi = {
   createdAt: string;
 };
 
+export type PermissaoShare = "view" | "download";
+
 export type CriarShareResponse = {
   id: number;
   url: string;
   expiresAt: string;
+  permission: PermissaoShare;
 };
 
 export type ListaSharesResponse = {
@@ -29,6 +32,7 @@ export const EXPIRACAO_SHARE = {
 export async function criarLinkCompartilhamento(
   fileId: number,
   expiresInSeconds: number = EXPIRACAO_SHARE.UM_DIA,
+  permission: PermissaoShare = "view",
 ): Promise<CriarShareResponse> {
   if (
     !Number.isInteger(expiresInSeconds) ||
@@ -40,6 +44,7 @@ export async function criarLinkCompartilhamento(
 
   return api.post<CriarShareResponse>(`/files/${fileId}/shares`, {
     expiresInSeconds,
+    permission,
   });
 }
 
@@ -86,39 +91,93 @@ export function mensagemErroShare(err: unknown): string {
   return "Não foi possível realizar o compartilhamento.";
 }
 // ---- Para a tela Compartilhados (lista global, rota proposta GET /shares) ----
+export type StatusShareApi = "active" | "expired" | "revoked";
+export type StatusLink = "ativo" | "expirado" | "revogado";
+
 export type LinkApi = {
   id: number;
   fileId: number;
   fileName: string;
   sizeBytes: number;
   mimeType: string | null;
+  permission: PermissaoShare;
+  status: StatusShareApi;
   expiresAt: string;
   revokedAt: string | null;
   createdAt: string;
 };
 
-export type StatusLink = "ativo" | "expirado" | "revogado";
+export type ListaMeusLinksResponse = {
+  shares: LinkApi[];
+  page: number;
+  limit: number;
+  total: number;
+};
 
-export function statusDoLink(l: {
-  expiresAt: string;
-  revokedAt: string | null;
-}): StatusLink {
-  if (l.revokedAt) return "revogado";
-  return new Date(l.expiresAt).getTime() <= Date.now() ? "expirado" : "ativo";
+export function statusDoLink(l: LinkApi): StatusLink {
+  const status: Record<StatusShareApi, StatusLink> = {
+    active: "ativo",
+    expired: "expirado",
+    revoked: "revogado",
+  };
+
+  return status[l.status];
 }
 
-export async function listarMeusLinks(): Promise<LinkApi[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const r = await api.get<{ shares?: any[] }>("/shares");
-  return (r?.shares ?? []).map((s) => ({
-    id: s.id,
-    fileId: s.fileId ?? s.file?.id,
-    fileName:
-      s.fileName ?? s.originalName ?? s.name ?? s.file?.originalName ?? "(sem nome)",
-    sizeBytes: s.sizeBytes ?? s.file?.sizeBytes ?? 0,
-    mimeType: s.mimeType ?? s.file?.mimeType ?? null,
-    expiresAt: s.expiresAt,
-    revokedAt: s.revokedAt ?? null,
-    createdAt: s.createdAt,
-  }));
+type ShareListaItemApi = {
+  id: number;
+  permission: PermissaoShare;
+  status: StatusShareApi;
+  expiresAt: string;
+  revokedAt: string | null;
+  createdAt: string;
+  file: {
+    id: number;
+    originalName: string;
+    mimeType: string | null;
+    sizeBytes: number;
+  };
+};
+type RespostaSharesApi = {
+  shares: ShareListaItemApi[];
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export async function listarMeusLinks(
+  page = 1,
+  limit = 50,
+  query = "",
+): Promise<ListaMeusLinksResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (query.trim()) {
+    params.set("q", query.trim());
+  }
+
+  const resposta = await api.get<RespostaSharesApi>(
+    `/shares?${params.toString()}`,
+  );
+
+  return {
+    shares: resposta.shares.map((share) => ({
+      id: share.id,
+      fileId: share.file.id,
+      fileName: share.file.originalName,
+      sizeBytes: share.file.sizeBytes,
+      mimeType: share.file.mimeType,
+      permission: share.permission,
+      status: share.status,
+      expiresAt: share.expiresAt,
+      revokedAt: share.revokedAt,
+      createdAt: share.createdAt,
+    })),
+    page: resposta.page,
+    limit: resposta.limit,
+    total: resposta.total,
+  };
 }
