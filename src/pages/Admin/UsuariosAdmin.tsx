@@ -265,6 +265,7 @@ export default function UsuariosAdmin() {
   const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroLista, setErroLista] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
   const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
@@ -286,13 +287,13 @@ export default function UsuariosAdmin() {
         if (ac.signal.aborted) return;
         setUsers(r?.users ?? []);
         setTotal(r?.total ?? 0);
-        setErro(null);
+        setErroLista(null);
       })
       .catch((e) => {
         if (ac.signal.aborted || (e instanceof Error && e.name === "AbortError")) return;
         setUsers([]);
         setTotal(0);
-        setErro(mensagemAdmin(e));
+        setErroLista(mensagemAdmin(e));
       })
       .finally(() => {
         if (!ac.signal.aborted) setCarregando(false);
@@ -355,6 +356,7 @@ export default function UsuariosAdmin() {
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
   const colunas = "grid-cols-[1fr_130px_170px_110px_120px]";
+  const mensagemErro = erro ?? erroLista;
 
   function acoes(u: UsuarioAdmin) {
     const bloqueada = u.id === eu?.id || ocupado === u.id || u.deletionPending;
@@ -440,9 +442,9 @@ export default function UsuariosAdmin() {
           className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:max-w-md"
         />
 
-        {erro && (
+        {mensagemErro && (
           <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {erro}
+            {mensagemErro}
           </div>
         )}
 
