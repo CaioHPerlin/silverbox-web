@@ -56,6 +56,18 @@ pnpm test
 
 Copiar `.env.example` para `.env` se precisar mudar `VITE_API_URL` no Vite. npm continua suportado: `npm ci`, `npm run dev`, `npm run build`. Os dois lockfiles são versionados e devem ser atualizados juntos. Testes são TypeScript; `pnpm test` verifica o proxy e Docker (porta 5173 livre). Teste somente do proxy: `node --test test/api-proxy.test.ts`.
 
+### Aceite no navegador
+
+Para o aceite de uma entrega, use o navegador disponível. Assim o CI evita baixar e manter navegadores a cada execução. Valide a versão publicada com contas de teste de usuário comum e administrador.
+
+1. Abra uma rota protegida sem sessão e confira o redirecionamento. Entre como usuário comum e confirme o acesso negado à área administrativa. Entre como admin e confira logout e mudança de papel.
+2. Com dados de teste, crie uma pasta, envie e baixe um arquivo, confira as versões, mova um arquivo para a lixeira e restaure-o. Valide compartilhamento, busca e persistência da foto de perfil após recarregar.
+3. Solicite a recuperação na caixa de teste, abra o link, troque a senha e entre com a nova. Confira as mensagens para links expirados ou reutilizados.
+4. Como admin, aplique filtros de período, usuário e ação na auditoria. Confira que a paginação mantém os filtros e que o CSV inclui registros de todas as páginas filtradas.
+5. Confira carregamento, estado vazio, erro e retentativa, confirmação de ações e submissão repetida. Teste acesso direto, recarregamento, página inexistente, teclado e tela estreita.
+
+Registre no PR o commit publicado, as jornadas validadas e os cenários que ficaram pendentes.
+
 A imagem final serve SPA com Nginx sem root (UID101), healthcheck `/health`, assets imutáveis e configuração de API em runtime. Não publica `.env` no build.
 
 CI/CD e preparação da Oracle: [deploy/README.md](deploy/README.md).

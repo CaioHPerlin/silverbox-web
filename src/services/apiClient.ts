@@ -10,7 +10,7 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function requestResponse(path: string, options: RequestInit = {}): Promise<Response> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     // manda o cookie de sessão do Better Auth em toda chamada
@@ -34,12 +34,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   throw new ApiError(message, response.status, code);
 }
 
+  return response;
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await requestResponse(path, options);
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 export const api = {
   get: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "GET" }),
+
+  getBlob: async (path: string) =>
+    (await requestResponse(path, { headers: { Accept: "text/csv" } })).blob(),
 
   post: <T>(path: string, body?: unknown, options?: RequestInit) =>
     request<T>(path, { ...options, method: "POST", body: body ? JSON.stringify(body) : undefined }),
