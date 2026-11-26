@@ -1,11 +1,13 @@
 import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
 import { authClient, useSession } from "../lib/authClient";
+import { mensagemDaApi } from "../lib/errorMessages";
 import { Link } from "react-router-dom";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import { buscarAvatar, salvarAvatar, removerAvatar } from "../services/avatar";
+import { ApiError } from "../services/apiClient";
 import { EVENTO_COTA } from "../lib/cotaEvents";
 
 function getInitials(name: string) {
@@ -84,7 +86,7 @@ export default function Perfil() {
       setAvatarPreview(null);
     } catch (error) {
       setAvatarError(
-        error instanceof Error
+        error instanceof ApiError
           ? error.message
           : "Não foi possível salvar a foto.",
       );
@@ -193,7 +195,7 @@ export default function Perfil() {
       const { error } = await authClient.updateUser({ name });
 
       if (error) {
-        setNameMessage(error.message || "Não foi possível atualizar o nome.");
+        setNameMessage(mensagemDaApi(error, "Não foi possível atualizar o nome."));
         return;
       }
 

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Ban, CheckCircle2, Pencil, Trash2, UserPlus } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { authClient } from "../../lib/authClient";
+import { mensagemDaApi } from "../../lib/errorMessages";
+import { passwordGuidance, validarSenha } from "../../lib/passwordPolicy";
 import { formatBytes } from "../../lib/format";
 import { temPapel } from "../../lib/roles";
 import { useUsuario } from "../../hooks/useUsuario";
@@ -65,8 +67,9 @@ function NovoUsuarioModal({
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    if (senha.length < 8 || senha.length > 128) {
-      setErro("A senha deve ter de 8 a 128 caracteres.");
+    const senhaValida = validarSenha(senha);
+    if (senhaValida !== true) {
+      setErro(senhaValida);
       return;
     }
     setSalvando(true);
@@ -113,34 +116,11 @@ function NovoUsuarioModal({
             {erro}
           </div>
         )}
-        <input
-          className={campo}
-          placeholder="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-        />
-        <input
-          className={campo}
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className={campo}
-          type="password"
-          placeholder="Senha (8 a 128 caracteres)"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          required
-        />
-        <select
-          className={campo}
-          value={papel}
-          onChange={(e) => setPapel(e.target.value as Role)}
-        >
+        <input className={campo} placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <input className={campo} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input className={campo} type="password" autoComplete="new-password" placeholder="Senha" aria-label="Senha" aria-describedby="admin-password-guidance" value={senha} onChange={(e) => setSenha(e.target.value)} required />
+        <p id="admin-password-guidance" className="text-xs text-zinc-400">{passwordGuidance}</p>
+        <select className={campo} value={papel} onChange={(e) => setPapel(e.target.value as Role)}>
           <option value="user">Comum</option>
           <option value="admin">Admin</option>
         </select>
@@ -371,16 +351,9 @@ export default function UsuariosAdmin() {
     setOcupado(id);
     setErro(null);
     try {
-      const r = (await acao()) as
-        | { error?: { message?: string; status?: number } | null }
-        | undefined;
+      const r = (await acao()) as { error?: { code?: string; message?: string; status?: number } | null } | undefined;
       if (r?.error) {
-        const msg = (r.error.message ?? "").toLowerCase();
-        setErro(
-          r.error.status === 409 && msg.includes("admin")
-            ? "Não é possível: esta é a única conta administradora."
-            : (r.error.message ?? "A operação falhou."),
-        );
+        setErro(mensagemDaApi(r.error));
       }
     } catch (e) {
       setErro(mensagemAdmin(e));

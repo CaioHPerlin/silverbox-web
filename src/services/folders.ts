@@ -1,4 +1,5 @@
-import { api } from "./apiClient";
+import { validarNome } from "../lib/fileName";
+import { api, ApiError } from "./apiClient";
 
 export type PastaApi = {
   id: number;
@@ -14,11 +15,15 @@ export async function listarPastas(parentFolderId?: number | null) {
 }
 
 export async function criarPasta(name: string, parentFolderId: number | null) {
+  const valido = validarNome(name);
+  if (valido !== true) throw new ApiError(valido, 400);
   const { folder } = await api.post<{ folder: PastaApi }>("/folders", { name, parentFolderId });
   return folder;
 }
 
 export async function renomearPasta(id: number, name: string) {
+  const valido = validarNome(name);
+  if (valido !== true) throw new ApiError(valido, 400);
   const { folder } = await api.patch<{ folder: PastaApi }>(`/folders/${id}`, { name });
   return folder;
 }

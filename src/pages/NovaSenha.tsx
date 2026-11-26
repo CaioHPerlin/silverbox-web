@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "../lib/authClient";
+import { mensagemDaApi } from "../lib/errorMessages";
+import { passwordGuidance, validarSenha } from "../lib/passwordPolicy";
 
 interface NovaSenhaFormData {
   password: string;
@@ -21,7 +23,7 @@ export default function NovaSenha() {
     formState: { errors, isSubmitting },
   } = useForm<NovaSenhaFormData>();
 
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro] = useState<{ mensagem: string; tokenInvalido: boolean } | null>(null);
   const [concluido, setConcluido] = useState(false);
 
   async function onSubmit({ password }: NovaSenhaFormData) {
@@ -34,11 +36,10 @@ export default function NovaSenha() {
     });
 
     if (res.error) {
-      setErro(
-        res.error.code === "INVALID_TOKEN" || res.error.status === 400
-          ? "Este link é inválido ou expirou."
-          : (res.error.message ?? "Não foi possível redefinir a senha."),
-      );
+      setErro({
+        mensagem: mensagemDaApi(res.error, "Não foi possível redefinir a senha. Tente novamente."),
+        tokenInvalido: res.error.code === "INVALID_TOKEN",
+      });
       return;
     }
 
@@ -89,10 +90,12 @@ export default function NovaSenha() {
                 role="alert"
                 className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
               >
-                {erro}{" "}
-                <Link to="/recuperar-acesso" className="underline">
-                  Pedir novo link
-                </Link>
+                {erro.mensagem}{" "}
+                {erro.tokenInvalido && (
+                  <Link to="/recuperar-acesso" className="underline">
+                    Pedir novo link
+                  </Link>
+                )}
               </div>
             )}
 
@@ -108,20 +111,15 @@ export default function NovaSenha() {
                 id="password"
                 type="password"
                 autoComplete="new-password"
+                aria-describedby="reset-password-guidance"
                 placeholder="Digite sua nova senha..."
                 className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
                 {...register("password", {
                   required: "Informe a nova senha.",
-                  minLength: {
-                    value: 8,
-                    message: "Use pelo menos 8 caracteres.",
-                  },
-                  maxLength: {
-                    value: 128,
-                    message: "Use no máximo 128 caracteres.",
-                  },
+                  validate: validarSenha,
                 })}
               />
+              <p id="reset-password-guidance" className="mb-1 text-xs text-zinc-400">{passwordGuidance}</p>
               {errors.password && (
                 <p className="mb-2 text-xs text-red-400">
                   {errors.password.message}

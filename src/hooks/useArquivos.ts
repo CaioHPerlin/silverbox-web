@@ -36,14 +36,15 @@ export function useArquivos(folderId: number | null) {
     setEstadoPagina({ folderId, pagina: pagina - 1 });
   }
 
-  async function executar(acao: () => Promise<unknown>) {
+  async function executar(acao: () => Promise<unknown>, tratarErroNoModal = false) {
     try {
       setErro(null);
       await acao();
       await recarregar();
     } catch (e) {
-      setErro(mensagemDeErro(e));
       if ((e as { status?: number }).status === 404) await recarregar();
+      if (tratarErroNoModal) throw e;
+      setErro(mensagemDeErro(e));
     }
   }
 
@@ -66,7 +67,7 @@ export function useArquivos(folderId: number | null) {
     carregando, enviando, erro,
     recarregar, enviar,
     novaPasta: (nome: string) => executar(() => criarPasta(nome, folderId)),
-    renomear: (id: number, nome: string) => executar(() => renomearArquivo(id, nome)),
+    renomear: (id: number, nome: string) => executar(() => renomearArquivo(id, nome), true),
     mover: (id: number, destino: number | null) => executar(() => moverArquivo(id, destino)),
     lixeira: (id: number) => executar(() => moverParaLixeira(id)),
     renomearPasta: (id: number, nome: string) => executar(() => renomearPasta(id, nome)),

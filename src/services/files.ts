@@ -81,8 +81,6 @@ export function mensagemDeErro(err: unknown): string {
     switch (err.status) {
       case 401: return "Sua sessão expirou. Entre de novo.";
       case 404: return "Item não encontrado. A lista foi atualizada.";
-      case 409: return "Operação não permitida para este item.";
-      case 413: return "Arquivo grande demais (máx. 1 GiB) ou espaço esgotado. Esvazie a lixeira.";
       case 503:
       case 507: return "Serviço temporariamente indisponível.";
       default: return err.message;
