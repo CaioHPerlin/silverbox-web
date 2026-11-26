@@ -57,16 +57,18 @@ function FileIcon({ type }: { type: FileType }) {
 }
 
 const estiloStatus: Record<StatusLink, string> = {
-  ativo: "bg-emerald-500/20 text-emerald-400",
-  expirado: "bg-amber-500/20 text-amber-400",
-  revogado: "bg-red-500/20 text-red-400",
+  ativo: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400",
+  expirado: "border-amber-500/20 bg-amber-500/5 text-amber-400",
+  revogado: "border-red-500/20 bg-red-500/5 text-red-400",
 };
 
 function StatusBadge({ status }: { status: StatusLink }) {
   return (
     <span
-      className={`inline-block rounded-md px-2.5 py-1 text-xs font-medium ${estiloStatus[status]}`}
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${estiloStatus[status]}`}
     >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+
       {status === "ativo"
         ? "Ativo"
         : status === "expirado"
@@ -85,7 +87,7 @@ function validade(l: LinkApi, status: StatusLink) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return status === "ativo" ? `expira em ${data}` : `Expirou em ${data}`;
+  return status === "ativo" ? `Expira em ${data}` : `Expirou em ${data}`;
 }
 
 export default function Compartilhados() {
@@ -244,7 +246,7 @@ export default function Compartilhados() {
             ) : (
               <>
                 {/* Tabela: computador e telas maiores */}
-                <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:block">
+                <div className="hidden overflow-hidden rounded-xl border border-white/10 xl:block">
                   <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_190px_90px_90px] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                     <span>Arquivo</span>
                     <span>Tamanho</span>
@@ -285,7 +287,7 @@ export default function Compartilhados() {
                 </div>
 
                 {/* Cartões: celular */}
-                <div className="space-y-3 sm:hidden">
+                <div className="space-y-3 xl:hidden">
                   {links.map((l) => {
                     const status = statusDoLink(l);
                     return (
@@ -302,7 +304,13 @@ export default function Compartilhados() {
                               {l.fileName}
                             </p>
                             <p className="mt-1 text-xs text-gray-400">
-                              {formatBytes(l.sizeBytes)} · {validade(l, status)}
+                              {formatBytes(l.sizeBytes)} ·
+                              {l.permission === "view"
+                                ? " Visualização"
+                                : " Download"}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {validade(l, status)}
                             </p>
                             <div className="mt-2 flex items-center justify-between gap-2">
                               <StatusBadge status={status} />

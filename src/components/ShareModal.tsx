@@ -46,6 +46,22 @@ function statusDoLinkArquivo(link: ShareApi): StatusLink {
   return "ativo";
 }
 
+const EXTENSOES_VISUALIZACAO = [
+  "txt",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "bmp",
+  "svg",
+];
+
+function permiteVisualizacao(nome: string) {
+  const extensao = nome.split(".").pop()?.toLowerCase() ?? "";
+  return EXTENSOES_VISUALIZACAO.includes(extensao);
+}
+
 export function ShareModal({ file, onClose }: Props) {
   if (!file) return null;
   return <ShareModalContent key={file.id} file={file} onClose={onClose} />;
@@ -57,8 +73,12 @@ function ShareModalContent({
 }: Props & { file: NonNullable<Props["file"]> }) {
   const fileId = Number(file.id);
 
+  const suportaVisualizacao = permiteVisualizacao(file.name);
+
   const [prazo, setPrazo] = useState<number>(EXPIRACAO_SHARE.UM_DIA);
-  const [permissao, setPermissao] = useState<PermissaoShare>("view");
+  const [permissao, setPermissao] = useState<PermissaoShare>(
+    suportaVisualizacao ? "view" : "download",
+  );
   const [gerado, setGerado] = useState<{
     url: string;
     expiresAt: string;
@@ -192,7 +212,11 @@ function ShareModalContent({
             aria-label="Permissão do link"
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
           >
-            <option value="view">Visualização</option>
+            <option value="view" disabled={!suportaVisualizacao}>
+              {suportaVisualizacao
+                ? "Visualização"
+                : "Visualização indisponível para este arquivo"}
+            </option>
             <option value="download">Download</option>
           </select>
 
