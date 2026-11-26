@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PLANS } from "../src/data/plans.ts";
 import { authUrl, safeReturnTo } from "../src/lib/authNavigation.ts";
+import { readPurchaseId, sandboxPaymentUrl } from "../src/lib/billing.ts";
 import { monthlyEquivalent, normalizeSeats, planUrl, readPlanSelection, totalPrice } from "../src/lib/pricing.ts";
 
 test("escolha de equipe e ciclo sobrevivem à navegação de autenticação", () => {
@@ -30,6 +31,7 @@ test("seleção inválida não cria uma oferta e quantidades respeitam os limite
   assert.equal(normalizeSeats(team, 2.5), 3);
   assert.equal(normalizeSeats(team, Infinity), 3);
   assert.equal(normalizeSeats(team, 999), 100);
+  assert.equal(normalizeSeats({ ...team, seatMax: 8 }, 9), 8);
   assert.deepEqual(readPlanSelection("?plan=team&cycle=invalid&seats=-5", PLANS), { planCode: "team", cycle: "month", seats: 3 });
   assert.deepEqual(readPlanSelection("?plan=pro&cycle=year&seats=10", PLANS), { planCode: "pro", cycle: "year", seats: 1 });
 });
@@ -43,7 +45,21 @@ test("total anual usa a cobrança integral, sem multiplicar o equivalente mensal
 
 test("catálogo disponível corresponde à cota padrão e não habilita cobrança futura", () => {
   assert.deepEqual(PLANS.filter((plan) => plan.status === "available").map((plan) => plan.code), ["free"]);
+  assert.ok(PLANS.every((plan) => !plan.checkoutEnabled));
   assert.equal(PLANS[0].storageBytes, 1073741824);
   assert.equal(PLANS[0].maxFileBytes, 1073741824);
   assert.equal(PLANS[0].monthlyPriceCents, 0);
+});
+
+test("rastreamento usa um ID de compra e aceita links apenas do Asaas Sandbox", () => {
+  const id = "6c68744e-6ef3-4fab-b00c-4a1fb3f978d2";
+  const returnTo = `/planos?purchaseId=${id}&checkout=success`;
+  const login = new URL(authUrl("login", returnTo), "https://silverbox.test");
+  assert.equal(safeReturnTo(login.searchParams.get("returnTo")), returnTo);
+  assert.equal(readPurchaseId(id), id);
+  assert.equal(readPurchaseId("../compra"), null);
+  assert.equal(sandboxPaymentUrl("https://sandbox.asaas.com/checkoutSession/show/checkout_test"), "https://sandbox.asaas.com/checkoutSession/show/checkout_test");
+  for (const url of ["http://sandbox.asaas.com/b/pdf/test", "https://asaas.com/b/pdf/test", "https://sandbox.asaas.com@other.test/", "javascript:alert(1)"]) {
+    assert.equal(sandboxPaymentUrl(url), null);
+  }
 });

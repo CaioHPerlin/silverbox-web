@@ -1,21 +1,31 @@
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, Cloud, ShieldCheck } from "lucide-react";
+import { useAsyncData } from "../hooks/useAsyncData";
 import { useSession } from "../lib/authClient";
 import { authUrl } from "../lib/authNavigation";
+import { readPurchaseId } from "../lib/billing";
 import { normalizeSeats, planUrl, readPlanSelection } from "../lib/pricing";
 import { PLANS } from "../data/plans";
+import { getPlanCatalog } from "../services/billing";
 import PlanCard from "../components/pricing/PlanCard";
 import PlanSummary from "../components/pricing/PlanSummary";
 import PlansComparison from "../components/pricing/PlansComparison";
 import PricingBrand from "../components/pricing/PricingBrand";
-import type { BillingCycle, PricingPlan } from "../types/billing";
+import PurchaseDialog from "../components/pricing/PurchaseDialog";
+import type { BillingCycle, PlanCatalog, PricingPlan } from "../types/billing";
 
 export default function Planos() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: session } = useSession();
-  const selection = readPlanSelection(searchParams.toString(), PLANS);
-  const selectedPlan = PLANS.find((plan) => plan.code === selection?.planCode);
+  const { data: session, isPending: sessionPending } = useSession();
+  const buyerId = session ? String(session.user.id) : null;
+  const catalog = useAsyncData<PlanCatalog | null>(getPlanCatalog, null);
+  const plans = catalog.value?.plans ?? PLANS;
+  const paymentMethods = catalog.value?.paymentMethods ?? [];
+  const checkoutEnabled = paymentMethods.length > 0 && plans.some((plan) => plan.checkoutEnabled);
+  const selection = readPlanSelection(searchParams.toString(), plans);
+  const selectedPlan = plans.find((plan) => plan.code === selection?.planCode);
+  const purchaseId = readPurchaseId(searchParams.get("purchaseId"));
   const cycle: BillingCycle = searchParams.get("cycle") === "year" ? "year" : "month";
   const freeUrl = planUrl({ planCode: "free", cycle: "month", seats: 1 });
   const createAccountUrl = session ? "/home" : authUrl("cadastro", freeUrl);
@@ -41,6 +51,15 @@ export default function Planos() {
     const params = new URLSearchParams(searchParams);
     params.delete("plan");
     params.delete("seats");
+    params.delete("purchaseId");
+    params.delete("checkout");
+    setSearchParams(params, { replace: true, preventScrollReset: true });
+  }
+
+  function trackPurchase(id: string) {
+    const params = new URLSearchParams(searchParams);
+    params.set("purchaseId", id);
+    params.delete("checkout");
     setSearchParams(params, { replace: true, preventScrollReset: true });
   }
 
@@ -67,17 +86,20 @@ export default function Planos() {
 
         <section id="ofertas" aria-labelledby="plans-title" className="scroll-mt-8 py-12 sm:py-16">
           <div className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div><p className="text-xs font-semibold uppercase tracking-widest text-blue-400">Planos e preços</p><h2 id="plans-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Encontre o seu espaço</h2><p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400">O Free está disponível para começar. Conheça também as propostas dos planos pagos, que chegam em breve.</p></div>
-            <div className="inline-flex w-fit rounded-xl border border-white/10 bg-white/[0.025] p-1" role="group" aria-label="Período da proposta de cobrança">
+            <div><p className="text-xs font-semibold uppercase tracking-widest text-blue-400">Planos e preços</p><h2 id="plans-title" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Encontre o seu espaço</h2><p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400">{checkoutEnabled ? "Escolha um plano e confira as formas de pagamento." : "O Free está disponível para começar. Conheça também as propostas dos planos pagos, que chegam em breve."}</p></div>
+            <div className="inline-flex w-fit rounded-xl border border-white/10 bg-white/[0.025] p-1" role="group" aria-label="Ciclo de cobrança">
               <button type="button" aria-pressed={cycle === "month"} onClick={() => changeCycle("month")} className={`min-h-10 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-blue-400 ${cycle === "month" ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`}>Mensal</button>
               <button type="button" aria-pressed={cycle === "year"} onClick={() => changeCycle("year")} className={`min-h-10 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-blue-400 ${cycle === "year" ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`}>Anual</button>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">{PLANS.map((plan) => <PlanCard key={plan.code} plan={plan} cycle={cycle} onSelect={selectPlan} />)}</div>
-          <p className="mt-6 max-w-3xl text-xs leading-6 text-zinc-500">Os valores e recursos dos planos pagos estão sujeitos à confirmação no lançamento. A contratação paga ainda não está disponível. Nos planos de equipe propostos, o espaço é compartilhado e a cobrança é por pessoa.</p>
+          {import.meta.env.DEV && Boolean(catalog.error) && (
+            <p role="status" className="mb-5 text-sm text-zinc-400">Catálogo da API indisponível. <button type="button" onClick={() => void catalog.reload()} className="font-medium text-blue-400 hover:underline">Tentar novamente</button></p>
+          )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">{plans.map((plan) => <PlanCard key={plan.code} plan={plan} cycle={cycle} onSelect={selectPlan} />)}</div>
+          <p className="mt-6 max-w-3xl text-xs leading-6 text-zinc-500">Os valores e recursos dos planos pagos estão sujeitos à confirmação no lançamento. Nos planos de equipe propostos, o espaço é compartilhado e a cobrança é por pessoa.</p>
         </section>
 
-        <PlansComparison plans={PLANS} />
+        <PlansComparison plans={plans} />
 
         <section aria-labelledby="pricing-cta-title" className="mb-20 flex flex-col justify-between gap-7 rounded-2xl border border-blue-400/20 bg-blue-500/5 p-7 sm:p-10 lg:flex-row lg:items-center">
           <div><Cloud size={25} className="mb-4 text-blue-400" aria-hidden="true" /><h2 id="pricing-cta-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">Seu primeiro espaço começa aqui.</h2><p className="mt-3 text-sm leading-6 text-zinc-400">Crie sua conta gratuita e comece a organizar seus arquivos.</p></div>
@@ -86,7 +108,11 @@ export default function Planos() {
       </main>
 
       <footer className="mx-auto flex max-w-7xl flex-col justify-between gap-5 border-t border-white/10 px-5 py-8 sm:flex-row sm:items-center sm:px-8"><PricingBrand /><p className="text-xs text-zinc-500">Um lugar para os seus arquivos.</p></footer>
-      {selection && selectedPlan && <PlanSummary key={selectedPlan.code} plan={selectedPlan} selection={selection} authenticated={Boolean(session)} onClose={closeSummary} />}
+      {purchaseId ? (
+        <PurchaseDialog key={`${buyerId}:${purchaseId}`} purchaseId={purchaseId} plans={plans} authenticated={Boolean(session)} sessionPending={sessionPending} onClose={closeSummary} />
+      ) : selection && selectedPlan && (
+        <PlanSummary key={planUrl(selection)} plan={selectedPlan} selection={selection} buyerId={buyerId} sessionPending={sessionPending} paymentMethods={paymentMethods} onCreated={trackPurchase} onClose={closeSummary} />
+      )}
     </div>
   );
 }
