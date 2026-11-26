@@ -8,10 +8,13 @@ export type ShareApi = {
   createdAt: string;
 };
 
+export type PermissaoShare = "view" | "download";
+
 export type CriarShareResponse = {
   id: number;
   url: string;
   expiresAt: string;
+  permission: PermissaoShare;
 };
 
 export type ListaSharesResponse = {
@@ -29,6 +32,7 @@ export const EXPIRACAO_SHARE = {
 export async function criarLinkCompartilhamento(
   fileId: number,
   expiresInSeconds: number = EXPIRACAO_SHARE.UM_DIA,
+  permission: PermissaoShare = "view",
 ): Promise<CriarShareResponse> {
   if (
     !Number.isInteger(expiresInSeconds) ||
@@ -40,6 +44,7 @@ export async function criarLinkCompartilhamento(
 
   return api.post<CriarShareResponse>(`/files/${fileId}/shares`, {
     expiresInSeconds,
+    permission,
   });
 }
 
@@ -86,14 +91,17 @@ export function mensagemErroShare(err: unknown): string {
   return "Não foi possível realizar o compartilhamento.";
 }
 // ---- Para a tela Compartilhados (lista global, rota proposta GET /shares) ----
+export type StatusShareApi = "active" | "expired" | "revoked";
+export type StatusLink = "ativo" | "expirado" | "revogado";
+
 export type LinkApi = {
   id: number;
   fileId: number;
   fileName: string;
   sizeBytes: number;
   mimeType: string | null;
-  permission: string;
-  status: string;
+  permission: PermissaoShare;
+  status: StatusShareApi;
   expiresAt: string;
   revokedAt: string | null;
   createdAt: string;
@@ -106,20 +114,20 @@ export type ListaMeusLinksResponse = {
   total: number;
 };
 
-export type StatusLink = "ativo" | "expirado" | "revogado";
+export function statusDoLink(l: LinkApi): StatusLink {
+  const status: Record<StatusShareApi, StatusLink> = {
+    active: "ativo",
+    expired: "expirado",
+    revoked: "revogado",
+  };
 
-export function statusDoLink(l: {
-  expiresAt: string;
-  revokedAt: string | null;
-}): StatusLink {
-  if (l.revokedAt) return "revogado";
-
-  return new Date(l.expiresAt).getTime() <= Date.now() ? "expirado" : "ativo";
+  return status[l.status];
 }
+
 type ShareListaItemApi = {
   id: number;
-  permission: string;
-  status: string;
+  permission: PermissaoShare;
+  status: StatusShareApi;
   expiresAt: string;
   revokedAt: string | null;
   createdAt: string;

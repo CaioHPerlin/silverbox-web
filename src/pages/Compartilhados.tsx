@@ -185,8 +185,8 @@ export default function Compartilhados() {
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <h1 className="text-2xl font-semibold">Compartilhados</h1>
         <p className="mb-6 mt-1 text-sm text-gray-500">
-          Links temporários que você criou. Quem tem o link baixa o arquivo sem
-          precisar de login.
+          Veja agora os links temporários que você criou para compartilhar seus
+          arquivos.
         </p>
 
         {erro && (
@@ -245,9 +245,10 @@ export default function Compartilhados() {
               <>
                 {/* Tabela: computador e telas maiores */}
                 <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:block">
-                  <div className="grid grid-cols-[minmax(0,1fr)_90px_190px_90px_90px] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
+                  <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_190px_90px_90px] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                     <span>Arquivo</span>
                     <span>Tamanho</span>
+                    <span>Permissão</span>
                     <span>Validade</span>
                     <span>Status</span>
                     <span />
@@ -257,7 +258,7 @@ export default function Compartilhados() {
                     return (
                       <div
                         key={l.id}
-                        className="grid grid-cols-[minmax(0,1fr)_90px_190px_90px_90px] items-center gap-3 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5"
+                        className="grid grid-cols-[minmax(0,1fr)_90px_110px_190px_90px_90px] items-center gap-3 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <FileIcon
@@ -267,6 +268,11 @@ export default function Compartilhados() {
                         </div>
                         <span className="text-sm text-gray-400">
                           {formatBytes(l.sizeBytes)}
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          {l.permission === "view"
+                            ? "Visualização"
+                            : "Download"}
                         </span>
                         <span className="text-sm text-gray-400">
                           {validade(l, status)}
