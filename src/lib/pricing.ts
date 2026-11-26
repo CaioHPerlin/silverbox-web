@@ -12,8 +12,7 @@ export function formatStorage(bytes: number): string {
 }
 
 export function normalizeSeats(plan: PricingPlan, seats: number): number {
-  if (!plan.perSeat) return 1;
-  return Number.isSafeInteger(seats) ? Math.min(100, Math.max(plan.seatMin, seats)) : plan.seatMin;
+  return Number.isSafeInteger(seats) ? Math.min(plan.seatMax, Math.max(plan.seatMin, seats)) : plan.seatMin;
 }
 
 export function cyclePrice(plan: PricingPlan, cycle: BillingCycle): number {

@@ -12,7 +12,8 @@ interface PlanCardProps {
 const icons = { free: Sparkles, pro: Rocket, team: Users, business: BriefcaseBusiness };
 
 export default function PlanCard({ plan, cycle, onSelect }: PlanCardProps) {
-  const [seats, setSeats] = useState(plan.seatMin);
+  const [selectedSeats, setSeats] = useState(plan.seatMin);
+  const seats = normalizeSeats(plan, selectedSeats);
   const Icon = icons[plan.code];
   const paid = plan.monthlyPriceCents > 0;
   const comingSoon = plan.status === "coming-soon";
@@ -47,15 +48,15 @@ export default function PlanCard({ plan, cycle, onSelect }: PlanCardProps) {
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-zinc-400">Pessoas · mínimo {plan.seatMin}</span>
             <div className="flex items-center gap-3">
-              <button type="button" aria-label={`Remover pessoa do ${plan.name}`} disabled={seats <= plan.seatMin} onClick={() => setSeats((value) => normalizeSeats(plan, value - 1))} className="rounded-md border border-white/15 p-1.5 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:opacity-30"><Minus size={14} /></button>
+              <button type="button" aria-label={`Remover pessoa do ${plan.name}`} disabled={seats <= plan.seatMin} onClick={() => setSeats(seats - 1)} className="rounded-md border border-white/15 p-1.5 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:opacity-30"><Minus size={14} /></button>
               <output aria-live="polite" className="min-w-4 text-center text-sm">{seats}</output>
-              <button type="button" aria-label={`Adicionar pessoa ao ${plan.name}`} disabled={seats >= 100} onClick={() => setSeats((value) => normalizeSeats(plan, value + 1))} className="rounded-md border border-white/15 p-1.5 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:opacity-30"><Plus size={14} /></button>
+              <button type="button" aria-label={`Adicionar pessoa ao ${plan.name}`} disabled={seats >= plan.seatMax} onClick={() => setSeats(seats + 1)} className="rounded-md border border-white/15 p-1.5 transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:opacity-30"><Plus size={14} /></button>
             </div>
           </div>
-          <p className="mt-2 text-xs text-zinc-400">Total proposto: {formatMoney(totalPrice(plan, cycle, seats))}/{cycle === "year" ? "ano" : "mês"}</p>
+          <p className="mt-2 text-xs text-zinc-400">{plan.checkoutEnabled ? "Total" : "Total proposto"}: {formatMoney(totalPrice(plan, cycle, seats))}/{cycle === "year" ? "ano" : "mês"}</p>
         </div>}
         <button type="button" onClick={() => onSelect(plan, seats)} className={`flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 ${plan.featured ? "border-blue-400 bg-blue-400 text-zinc-950 hover:bg-blue-300" : "border-white/15 bg-white/5 text-white hover:bg-white/10"}`}>
-          {comingSoon ? `Conhecer o ${plan.name}` : "Começar grátis"}
+          {plan.checkoutEnabled ? `Escolher ${plan.name}` : comingSoon ? `Conhecer o ${plan.name}` : "Começar grátis"}
         </button>
       </div>
     </article>
