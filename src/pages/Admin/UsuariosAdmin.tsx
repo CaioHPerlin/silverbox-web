@@ -8,6 +8,7 @@ import { useUsuario } from "../../hooks/useUsuario";
 import {
   criarUsuario,
   editarUsuario,
+  gbParaBytes,
   listarUsuarios,
   mensagemAdmin,
   paraBytes,
@@ -155,7 +156,7 @@ function EditarForm({
   onClose: () => void;
   onSalvo: () => void;
 }) {
-  const [nome, setNome] = useState(usuario.name);
+  
   const [cotaGb, setCotaGb] = useState(
     String(+(paraBytes(usuario.quotaLimitBytes) / 1024 ** 3).toFixed(2)),
   );
@@ -163,27 +164,29 @@ function EditarForm({
   const [salvando, setSalvando] = useState(false);
 
   async function enviar(e: React.FormEvent) {
-    e.preventDefault();
-    const gb = Number(cotaGb.replace(",", "."));
-    if (!nome.trim()) return setErro("Informe o nome.");
-    if (!Number.isFinite(gb) || gb <= 0) return setErro("Informe uma cota maior que zero.");
+  e.preventDefault();
+  const gb = Number(cotaGb.replace(",", "."));
 
-    setSalvando(true);
-    setErro(null);
-    try {
-      await editarUsuario(usuario.id, {
-        //name: nome.trim(),
-        quotaLimitBytes: String(Math.round(gb * 1024 ** 3)),
-      });
-    } catch (err) {
-      setSalvando(false);
-      setErro(mensagemAdmin(err));
-      return;
-    }
-    setSalvando(false);
-    onSalvo();
-    onClose();
+  let bytes: string;
+  try {
+    bytes = gbParaBytes(gb);
+  } catch {
+    return setErro("Informe uma cota válida, maior que zero.");
   }
+
+  setSalvando(true);
+  setErro(null);
+  try {
+    await editarUsuario(usuario.id, { quotaLimitBytes: bytes });
+  } catch (err) {
+    setSalvando(false);
+    setErro(mensagemAdmin(err));
+    return;
+  }
+  setSalvando(false);
+  onSalvo();
+  onClose();
+}
 
   return (
     <div
@@ -204,10 +207,7 @@ function EditarForm({
             {erro}
           </div>
         )}
-        <label className="block text-xs text-gray-400">
-          Nome
-          <input className={`${campo} mt-1`} value={nome} onChange={(e) => setNome(e.target.value)} required />
-        </label>
+        
         <label className="block text-xs text-gray-400">
           Cota (GB)
           <input
@@ -231,6 +231,28 @@ function EditarForm({
   );
 }
 
+function Uso({ u }: { u: UsuarioAdmin }) {
+  const limite = paraBytes(u.quotaLimitBytes);
+  if (u.usedBytes === undefined)
+    return <span className="text-sm text-gray-300">{formatBytes(limite)}</span>;
+
+  const usado = paraBytes(u.usedBytes);
+  const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+  return (
+    <div className="pr-2">
+      <p className="mb-1 text-xs text-gray-300">
+        {formatBytes(usado)} de {formatBytes(limite)}
+      </p>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full ${pct >= 90 ? "bg-red-500" : "bg-blue-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function UsuariosAdmin() {
   const { usuario: eu } = useUsuario();
 
@@ -243,6 +265,7 @@ export default function UsuariosAdmin() {
   const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroLista, setErroLista] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
   const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
@@ -264,13 +287,13 @@ export default function UsuariosAdmin() {
         if (ac.signal.aborted) return;
         setUsers(r?.users ?? []);
         setTotal(r?.total ?? 0);
-        setErro(null);
+        setErroLista(null);
       })
       .catch((e) => {
         if (ac.signal.aborted || (e instanceof Error && e.name === "AbortError")) return;
         setUsers([]);
         setTotal(0);
-        setErro(mensagemAdmin(e));
+        setErroLista(mensagemAdmin(e));
       })
       .finally(() => {
         if (!ac.signal.aborted) setCarregando(false);
@@ -332,9 +355,10 @@ export default function UsuariosAdmin() {
   }
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const colunas = "grid-cols-[1fr_130px_110px_110px_120px]";
+  const colunas = "grid-cols-[1fr_130px_170px_110px_120px]";
+  const mensagemErro = erro ?? erroLista;
 
-  function Acoes({ u }: { u: UsuarioAdmin }) {
+  function acoes(u: UsuarioAdmin) {
     const bloqueada = u.id === eu?.id || ocupado === u.id || u.deletionPending;
     return (
       <div className="flex items-center gap-1">
@@ -344,7 +368,7 @@ export default function UsuariosAdmin() {
           onClick={() => setEditando(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
           aria-label={`Editar ${u.email}`}
-          title="Editar nome e cota"
+          title="Editar cota"
         >
           <Pencil className="h-4 w-4" />
         </button>
@@ -372,7 +396,7 @@ export default function UsuariosAdmin() {
     );
   }
 
-  function SeletorPapel({ u }: { u: UsuarioAdmin }) {
+  function seletorPapel(u: UsuarioAdmin) {
     return (
       <select
         value={papelDe(u)}
@@ -418,9 +442,9 @@ export default function UsuariosAdmin() {
           className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:max-w-md"
         />
 
-        {erro && (
+        {mensagemErro && (
           <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {erro}
+            {mensagemErro}
           </div>
         )}
 
@@ -451,12 +475,10 @@ export default function UsuariosAdmin() {
                       <p className="truncate text-sm">{u.name}</p>
                       <p className="truncate text-xs text-gray-500">{u.email}</p>
                     </div>
-                    <div><SeletorPapel u={u} /></div>
-                    <span className="text-sm text-gray-300">
-                      {formatBytes(paraBytes(u.quotaLimitBytes))}
-                    </span>
+                    <div>{seletorPapel(u)}</div>
+                    <Uso u={u} />
                     <div><StatusBadge u={u} /></div>
-                    <Acoes u={u} />
+                    {acoes(u)}
                   </div>
                 ))}
               </div>
@@ -470,13 +492,11 @@ export default function UsuariosAdmin() {
                         <p className="truncate text-sm">{u.name}</p>
                         <p className="truncate text-xs text-gray-500">{u.email}</p>
                       </div>
-                      <Acoes u={u} />
+                      {acoes(u)}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <SeletorPapel u={u} />
-                      <span className="text-sm text-gray-300">
-                        Cota: {formatBytes(paraBytes(u.quotaLimitBytes))}
-                      </span>
+                      {seletorPapel(u)}
+                      <Uso u={u} />
                       <StatusBadge u={u} />
                     </div>
                   </div>
