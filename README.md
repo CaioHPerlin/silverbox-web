@@ -56,6 +56,24 @@ pnpm test
 
 Copiar `.env.example` para `.env` se precisar mudar `VITE_API_URL` no Vite. npm continua suportado: `npm ci`, `npm run dev`, `npm run build`. Os dois lockfiles são versionados e devem ser atualizados juntos. Testes são TypeScript; `pnpm test` verifica o proxy e Docker (porta 5173 livre). Teste somente do proxy: `node --test test/api-proxy.test.ts`.
 
+### Aceite no navegador
+
+```sh
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
+
+O Playwright inicia o Vite em `http://localhost:4178`. Os cenários de sessão, recuperação e auditoria usam respostas controladas e dispensam contas ou SMTP. Para usar um Chromium local, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE` com o caminho do executável.
+
+Para rodar também as jornadas com a API real, use uma instância **local e descartável**. Crie as contas `usuario-browser@example.test` e `admin-browser@example.test` com a mesma senha sintética. Promova a segunda a `admin` seguindo o README da API. Configure `http://localhost:4178` como origem confiável e passe a origem local da API.
+
+```sh
+SILVERBOX_E2E_API_URL=http://localhost:8000 \
+SILVERBOX_E2E_PASSWORD=senha-local-descartavel pnpm test:e2e
+```
+
+As jornadas locais criam arquivos, pastas e links sintéticos, conferem download, versões, lixeira, perfil e acesso administrativo, e validam o CSV real. Para o aceite da versão publicada, registre o SHA do deploy e repita as jornadas com as contas de teste da equipe, incluindo o envio e uso do link recebido por e-mail.
+
 A imagem final serve SPA com Nginx sem root (UID101), healthcheck `/health`, assets imutáveis e configuração de API em runtime. Não publica `.env` no build.
 
 CI/CD e preparação da Oracle: [deploy/README.md](deploy/README.md).
