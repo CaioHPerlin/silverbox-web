@@ -160,7 +160,7 @@ export default function Arquivos() {
 
   function handleNovaPasta() {
     const nome = window.prompt("Nome da nova pasta:")?.trim();
-    if (nome) novaPasta(nome);
+    if (nome !== undefined) novaPasta(nome);
   }
 
   // Recebe ações da Sidebar e caminhos enviados pela busca da Home
@@ -464,7 +464,7 @@ export default function Arquivos() {
                             .prompt("Novo nome da pasta:", pasta.name)
                             ?.trim();
 
-                          if (nome && nome !== pasta.name) {
+                          if (nome !== undefined && nome !== pasta.name) {
                             renomearPasta(pasta.id, nome);
                           }
                         }}
@@ -617,9 +617,7 @@ export default function Arquivos() {
         <RenameModal
           file={renamingFile}
           onClose={() => setRenamingFile(null)}
-          onRenamed={(id, newName) => {
-            renomear(Number(id), newName);
-          }}
+          onRenamed={(id, newName) => renomear(Number(id), newName)}
         />
 
         <FolderPickerModal

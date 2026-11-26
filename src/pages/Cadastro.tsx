@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
 import { authUrl, safeReturnTo } from "../lib/authNavigation";
+import { mensagemDaApi } from "../lib/errorMessages";
+import { passwordGuidance, validarTamanhoDaSenha } from "../lib/passwordPolicy";
 import type { CadastroFormData } from "../types";
 
 export default function Cadastro() {
@@ -30,7 +32,7 @@ export default function Cadastro() {
     });
 
     if (error) {
-      setErrorMsg("Já existe uma conta com esse e-mail.");
+      setErrorMsg(mensagemDaApi(error, "Não foi possível criar sua conta. Tente novamente."));
       return;
     }
 
@@ -126,13 +128,15 @@ export default function Cadastro() {
             id="password"
             type="password"
             autoComplete="new-password"
+            aria-describedby="signup-password-guidance"
             placeholder="Digite sua senha..."
             className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
             {...register("password", {
               required: "Informe uma senha.",
-              minLength: { value: 8, message: "Mínimo de 8 caracteres." },
+              validate: validarTamanhoDaSenha,
             })}
           />
+          <p id="signup-password-guidance" className="mb-1 text-xs text-zinc-400">{passwordGuidance}</p>
           {errors.password && (
             <p className="mb-2 text-xs text-red-400">
               {errors.password.message}
@@ -164,7 +168,7 @@ export default function Cadastro() {
             </p>
           )}
 
-          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
+          {errorMsg && <p role="alert" className="mb-2 text-xs text-red-400">{errorMsg}</p>}
 
           <button
             type="submit"

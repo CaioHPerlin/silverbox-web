@@ -28,6 +28,8 @@ export const EXPIRACAO_SHARE = {
   SETE_DIAS: 604800,
 } as const;
 
+const prazoInvalido = "O prazo deve ser entre 1 minuto e 7 dias.";
+
 // Criar link temporário
 export async function criarLinkCompartilhamento(
   fileId: number,
@@ -39,7 +41,7 @@ export async function criarLinkCompartilhamento(
     expiresInSeconds < 60 ||
     expiresInSeconds > EXPIRACAO_SHARE.SETE_DIAS
   ) {
-    throw new Error("O prazo deve ser entre 1 minuto e 7 dias.");
+    throw new ApiError(prazoInvalido, 400);
   }
 
   return api.post<CriarShareResponse>(`/files/${fileId}/shares`, {
@@ -72,7 +74,7 @@ export function mensagemErroShare(err: unknown): string {
   if (err instanceof ApiError) {
     switch (err.status) {
       case 400:
-        return "Prazo de compartilhamento inválido.";
+        return prazoInvalido;
       case 401:
         return "Sua sessão expirou. Entre novamente.";
       case 404:
@@ -82,10 +84,6 @@ export function mensagemErroShare(err: unknown): string {
       default:
         return err.message;
     }
-  }
-
-  if (err instanceof Error) {
-    return err.message;
   }
 
   return "Não foi possível realizar o compartilhamento.";

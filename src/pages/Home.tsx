@@ -213,21 +213,12 @@ export default function Home() {
   }
 
   async function handleRenomear(id: string, newName: string) {
-    try {
-      await renomearArquivo(Number(id), newName);
-
-      setArquivos((atuais) =>
-        atuais.map((arquivo) =>
-          arquivo.id === Number(id)
-            ? { ...arquivo, originalName: newName }
-            : arquivo,
-        ),
-      );
-
-      setRenamingFile(null);
-    } catch {
-      setErro("Não foi possível renomear o arquivo.");
-    }
+    const renomeado = await renomearArquivo(Number(id), newName);
+    setArquivos((atuais) =>
+      atuais.map((arquivo) =>
+        arquivo.id === renomeado.id ? { ...arquivo, originalName: renomeado.originalName } : arquivo,
+      ),
+    );
   }
 
   async function handleMover(id: string, folderId: number | null) {

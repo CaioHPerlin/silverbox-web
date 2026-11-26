@@ -1,4 +1,5 @@
 import { API_URL } from "../config/api";
+import { erroDaResposta } from "./apiClient";
 
 type AvatarResponse = {
   image: string;
@@ -16,12 +17,7 @@ export async function salvarAvatar(file: File): Promise<AvatarResponse> {
     body: file,
   });
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(
-      body?.message ?? body?.error ?? "Não foi possível salvar a foto.",
-    );
-  }
+  if (!response.ok) throw await erroDaResposta(response, "Não foi possível salvar a foto.");
 
   return response.json();
 }

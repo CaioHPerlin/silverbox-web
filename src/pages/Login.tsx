@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
 import { authUrl, safeReturnTo } from "../lib/authNavigation";
+import { mensagemDaApi } from "../lib/errorMessages";
 import type { LoginFormData } from "../types";
 
 export default function Login() {
@@ -27,7 +28,9 @@ export default function Login() {
     });
 
     if (error) {
-      setErrorMsg("E-mail ou senha incorretos.");
+      setErrorMsg(error.status === 401
+        ? "E-mail ou senha incorretos."
+        : mensagemDaApi(error, "Não foi possível entrar. Tente novamente."));
       return;
     }
 
@@ -115,7 +118,7 @@ export default function Login() {
             </p>
           )}
 
-          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
+          {errorMsg && <p role="alert" className="mb-2 text-xs text-red-400">{errorMsg}</p>}
 
           <div className="mb-4 mt-2 text-right">
             <Link

@@ -24,7 +24,7 @@ export type ListaUsuarios = {
 export type NovoUsuario = {
   name: string;
   email: string;
-  password: string; // 8 a 128 caracteres
+  password: string;
   role: "user" | "admin";
 };
 
@@ -121,24 +121,8 @@ export function formatarBytes(bytes: number): string {
 }
 
 // ---- Mensagens de erro ----
-// A API não manda "code": os erros chegam só com status e texto.
-// Os includes abaixo são suposição até conferir as frases reais em admin-users.ts.
-
 export function mensagemAdmin(err: unknown): string {
-  if (err instanceof ApiError) {
-    const m = err.message.toLowerCase();
-    if (err.status === 409) {
-      if (m.includes("admin")) return "Não é possível: esta é a única conta administradora.";
-      if (m.includes("quota") || m.includes("cota"))
-        return "A cota não pode ser menor que o espaço já usado.";
-      if (m.includes("delet") || m.includes("exclu"))
-        return "Esta conta já está sendo excluída.";
-      return "Conflito: a operação não pôde ser concluída.";
-    }
-    if (err.status === 422) return "Já existe uma conta com esse e-mail.";
-    if (err.status === 403) return "Você não tem permissão para esta operação.";
-    if (err.status === 404) return "Usuário não encontrado. A lista foi atualizada.";
-    if (err.status === 400) return err.message;
-  }
-  return "Não foi possível concluir a operação.";
+  if (!(err instanceof ApiError)) return "Não foi possível concluir a operação.";
+  if (err.status === 404) return "Usuário não encontrado. A lista foi atualizada.";
+  return err.message;
 }

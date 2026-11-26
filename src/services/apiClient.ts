@@ -1,4 +1,5 @@
 import { API_URL } from "../config/api";
+import { mensagemDaApi } from "../lib/errorMessages";
 
 class ApiError extends Error {
   status: number;
@@ -8,6 +9,16 @@ class ApiError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+export async function erroDaResposta(response: Response, fallback?: string): Promise<ApiError> {
+  const body = await response.json().catch(() => null);
+  const code = typeof body?.code === "string" ? body.code : undefined;
+  return new ApiError(
+    mensagemDaApi({ status: response.status, code, message: body?.message, error: body?.error }, fallback),
+    response.status,
+    code,
+  );
 }
 
 async function requestResponse(path: string, options: RequestInit = {}): Promise<Response> {
@@ -21,18 +32,7 @@ async function requestResponse(path: string, options: RequestInit = {}): Promise
     },
   });
 
-  if (!response.ok) {
-  let message = `Erro ${response.status}`;
-  let code: string | undefined;
-  try {
-    const body = await response.json();
-    message = body.message ?? body.error ?? message;
-    code = body.code;
-  } catch {
-    // resposta sem corpo JSON
-  }
-  throw new ApiError(message, response.status, code);
-}
+  if (!response.ok) throw await erroDaResposta(response);
 
   return response;
 }
