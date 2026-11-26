@@ -1,44 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
-import { Ban, CheckCircle2, Trash2, UserPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ban, CheckCircle2, Pencil, Trash2, UserPlus } from "lucide-react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { authClient } from "../../lib/authClient";
+import { mensagemDaApi } from "../../lib/errorMessages";
+import { passwordGuidance, validarSenha } from "../../lib/passwordPolicy";
+import { formatBytes } from "../../lib/format";
+import { temPapel } from "../../lib/roles";
 import { useUsuario } from "../../hooks/useUsuario";
-import LoadingSkeleton from "../../components/LoadingSkeleton";
+import {
+  criarUsuario,
+  editarUsuario,
+  gbParaBytes,
+  listarUsuarios,
+  mensagemAdmin,
+  paraBytes,
+  type UsuarioAdmin,
+} from "../../services/adminUsers";
 
-// ---- Tipos ----
 type Role = "user" | "admin";
 
-interface ApiUser {
-  id: string;
-  name: string;
-  email: string;
-  role?: string | null;
-  banned?: boolean | null;
+const POR_PAGINA = 20;
+
+function papelDe(u: UsuarioAdmin): Role {
+  return temPapel(u.role, "admin") ? "admin" : "user";
 }
 
-function papelDe(u: ApiUser): Role {
-  return (u.role ?? "")
-    .split(",")
-    .map((r) => r.trim())
-    .includes("admin")
-    ? "admin"
-    : "user";
-}
-
-// ---- Badges ----
-function RoleBadge({ role }: { role: Role }) {
-  if (role === "admin") {
+function StatusBadge({ u }: { u: UsuarioAdmin }) {
+  if (u.deletionPending)
     return (
-      <span className="inline-block rounded-md bg-blue-500/15 px-2.5 py-1 text-xs font-medium text-blue-300">
-        Admin
+      <span className="inline-block rounded-md bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-400">
+        Excluindo...
       </span>
     );
-  }
-  return <span className="text-sm text-gray-300">Comum</span>;
-}
-
-function StatusBadge({ bloqueado }: { bloqueado: boolean }) {
-  return bloqueado ? (
+  return u.banned ? (
     <span className="inline-block rounded-md bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-400">
       Bloqueado
     </span>
@@ -49,7 +43,10 @@ function StatusBadge({ bloqueado }: { bloqueado: boolean }) {
   );
 }
 
-// ---- Modal de novo usuário ----
+const campo =
+  "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500";
+
+// ---- Modal: novo usuário ----
 function NovoUsuarioModal({
   aberto,
   onClose,
@@ -70,23 +67,26 @@ function NovoUsuarioModal({
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    if (senha.length < 8 || senha.length > 128) {
-      setErro("A senha deve ter de 8 a 128 caracteres.");
+    const senhaValida = validarSenha(senha);
+    if (senhaValida !== true) {
+      setErro(senhaValida);
       return;
     }
     setSalvando(true);
     setErro(null);
-    const res = await authClient.admin.createUser({
-      name: nome.trim(),
-      email: email.trim(),
-      password: senha,
-      role: papel,
-    });
-    setSalvando(false);
-    if (res.error) {
-      setErro(res.error.message ?? "Não foi possível criar o usuário.");
+    try {
+      await criarUsuario({
+        name: nome.trim(),
+        email: email.trim(),
+        password: senha,
+        role: papel,
+      });
+    } catch (err) {
+      setSalvando(false);
+      setErro(mensagemAdmin(err));
       return;
     }
+    setSalvando(false);
     setNome("");
     setEmail("");
     setSenha("");
@@ -94,9 +94,6 @@ function NovoUsuarioModal({
     onCriado();
     onClose();
   }
-
-  const campo =
-    "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500";
 
   return (
     <div
@@ -119,34 +116,11 @@ function NovoUsuarioModal({
             {erro}
           </div>
         )}
-        <input
-          className={campo}
-          placeholder="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-        />
-        <input
-          className={campo}
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className={campo}
-          type="password"
-          placeholder="Senha (8 a 128 caracteres)"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          required
-        />
-        <select
-          className={campo}
-          value={papel}
-          onChange={(e) => setPapel(e.target.value as Role)}
-        >
+        <input className={campo} placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <input className={campo} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input className={campo} type="password" autoComplete="new-password" placeholder="Senha" aria-label="Senha" aria-describedby="admin-password-guidance" value={senha} onChange={(e) => setSenha(e.target.value)} required />
+        <p id="admin-password-guidance" className="text-xs text-zinc-400">{passwordGuidance}</p>
+        <select className={campo} value={papel} onChange={(e) => setPapel(e.target.value as Role)}>
           <option value="user">Comum</option>
           <option value="admin">Admin</option>
         </select>
@@ -171,54 +145,230 @@ function NovoUsuarioModal({
   );
 }
 
+// ---- Modal: editar nome e cota ----
+function EditarUsuarioModal({
+  usuario,
+  onClose,
+  onSalvo,
+}: {
+  usuario: UsuarioAdmin | null;
+  onClose: () => void;
+  onSalvo: () => void;
+}) {
+  if (!usuario) return null;
+  // key remonta o formulário ao trocar de usuário
+  return (
+    <EditarForm
+      key={usuario.id}
+      usuario={usuario}
+      onClose={onClose}
+      onSalvo={onSalvo}
+    />
+  );
+}
+
+function EditarForm({
+  usuario,
+  onClose,
+  onSalvo,
+}: {
+  usuario: UsuarioAdmin;
+  onClose: () => void;
+  onSalvo: () => void;
+}) {
+  const [cotaGb, setCotaGb] = useState(
+    String(+(paraBytes(usuario.quotaLimitBytes) / 1024 ** 3).toFixed(2)),
+  );
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    const gb = Number(cotaGb.replace(",", "."));
+
+    let bytes: string;
+    try {
+      bytes = gbParaBytes(gb);
+    } catch {
+      return setErro("Informe uma cota válida, maior que zero.");
+    }
+
+    setSalvando(true);
+    setErro(null);
+    try {
+      await editarUsuario(usuario.id, { quotaLimitBytes: bytes });
+    } catch (err) {
+      setSalvando(false);
+      setErro(mensagemAdmin(err));
+      return;
+    }
+    setSalvando(false);
+    onSalvo();
+    onClose();
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={enviar}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md space-y-3 rounded-xl border border-white/10 bg-[#161616] p-5"
+      >
+        <h2 className="text-lg font-semibold">Editar conta</h2>
+        <p className="truncate text-sm text-gray-500">{usuario.email}</p>
+        {erro && (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
+            {erro}
+          </div>
+        )}
+
+        <label className="block text-xs text-gray-400">
+          Cota (GB)
+          <input
+            className={`${campo} mt-1`}
+            inputMode="decimal"
+            value={cotaGb}
+            onChange={(e) => setCotaGb(e.target.value)}
+            required
+          />
+        </label>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={salvando}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50"
+          >
+            {salvando ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Uso({ u }: { u: UsuarioAdmin }) {
+  const limite = paraBytes(u.quotaLimitBytes);
+  if (u.usedBytes === undefined)
+    return <span className="text-sm text-gray-300">{formatBytes(limite)}</span>;
+
+  const usado = paraBytes(u.usedBytes);
+  const pct =
+    limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+  return (
+    <div className="pr-2">
+      <p className="mb-1 text-xs text-gray-300">
+        {formatBytes(usado)} de {formatBytes(limite)}
+      </p>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full ${pct >= 90 ? "bg-red-500" : "bg-blue-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function UsuariosAdmin() {
   const { usuario: eu } = useUsuario();
-  const [users, setUsers] = useState<ApiUser[]>([]);
+
+  const [termo, setTermo] = useState("");
+  const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [recarga, setRecarga] = useState(0);
+
+  const [users, setUsers] = useState<UsuarioAdmin[]>([]);
+  const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroLista, setErroLista] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
+  const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
 
-  const carregar = useCallback(async () => {
-    setCarregando(true);
-    const res = await authClient.admin.listUsers({
-      query: { limit: 100, sortBy: "createdAt", sortDirection: "desc" },
-    });
-    if (res.error) {
-      setErro(res.error.message ?? "Não foi possível carregar os usuários.");
-    } else {
-      const data = res.data as unknown as { users: ApiUser[] } | null;
-      setUsers(data?.users ?? []);
-      setErro(null);
-    }
-    setCarregando(false);
-  }, []);
-
+  // debounce de 300 ms; a página volta para 1 quando o termo muda
   useEffect(() => {
-    let ativo = true;
-    void Promise.resolve().then(() => { if (ativo) return carregar(); });
-    return () => { ativo = false; };
-  }, [carregar]);
+    const t = setTimeout(() => {
+      setQ(termo.trim());
+      setPagina(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [termo]);
 
-  // executa uma ação do plugin, mostra o erro e recarrega a lista
-  async function executar(
-    id: string,
-    acao: () => Promise<{ error?: { message?: string } | null }>,
-  ) {
+  // setState só dentro de .then/.catch/.finally (regra do lint)
+  useEffect(() => {
+    const ac = new AbortController();
+    listarUsuarios(q, pagina, POR_PAGINA, ac.signal)
+      .then((r) => {
+        if (ac.signal.aborted) return;
+        setUsers(r?.users ?? []);
+        setTotal(r?.total ?? 0);
+        setErroLista(null);
+      })
+      .catch((e) => {
+        if (
+          ac.signal.aborted ||
+          (e instanceof Error && e.name === "AbortError")
+        )
+          return;
+        setUsers([]);
+        setTotal(0);
+        setErroLista(mensagemAdmin(e));
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setCarregando(false);
+      });
+    return () => ac.abort();
+  }, [q, pagina, recarga]);
+
+  function recarregar() {
+    setCarregando(true);
+    setRecarga((n) => n + 1);
+  }
+
+  function irParaPagina(nova: number) {
+    setCarregando(true);
+    setPagina(nova);
+  }
+
+  // executa uma operação, mostra falhas/conflitos e recarrega a lista
+  async function executar(id: string, acao: () => Promise<unknown>) {
     setOcupado(id);
     setErro(null);
-    const res = await acao();
-    if (res.error) setErro(res.error.message ?? "A operação falhou.");
+    try {
+      const r = (await acao()) as { error?: { code?: string; message?: string; status?: number } | null } | undefined;
+      if (r?.error) {
+        setErro(mensagemDaApi(r.error));
+      }
+    } catch (e) {
+      setErro(mensagemAdmin(e));
+    }
     setOcupado(null);
-    await carregar();
+    recarregar();
   }
 
-  function handleExcluir(u: ApiUser) {
-    if (window.confirm(`Excluir ${u.email}? Esta ação não pode ser desfeita.`))
-      executar(u.id, () => authClient.admin.removeUser({ userId: u.id }));
+  function handleExcluir(u: UsuarioAdmin) {
+    if (!window.confirm(`Excluir ${u.email}? Esta ação não pode ser desfeita.`))
+      return;
+    executar(u.id, () => authClient.admin.removeUser({ userId: u.id }));
   }
 
-  function handleBloqueio(u: ApiUser) {
+  function handleBloqueio(u: UsuarioAdmin) {
     if (u.banned) {
       executar(u.id, () => authClient.admin.unbanUser({ userId: u.id }));
     } else if (window.confirm(`Bloquear ${u.email}?`)) {
@@ -226,22 +376,36 @@ export default function UsuariosAdmin() {
     }
   }
 
-  function handlePapel(u: ApiUser, novo: Role) {
+  function handlePapel(u: UsuarioAdmin, novo: Role) {
     if (novo === papelDe(u)) return;
-    executar(u.id, () =>
-      authClient.admin.setRole({ userId: u.id, role: novo }),
-    );
+    executar(u.id, async () => {
+      const r = await authClient.admin.setRole({ userId: u.id, role: novo });
+      if (!r.error) await authClient.admin.revokeUserSessions({ userId: u.id });
+      return r;
+    });
   }
 
-  const colunas = "grid-cols-[1fr_130px_110px_90px]";
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  const colunas = "grid-cols-[1fr_130px_170px_110px_120px]";
+  const mensagemErro = erro ?? erroLista;
 
-  function Acoes({ u }: { u: ApiUser }) {
-    const eEu = u.id === eu?.id;
+  function acoes(u: UsuarioAdmin) {
+    const bloqueada = u.id === eu?.id || ocupado === u.id || u.deletionPending;
     return (
       <div className="flex items-center gap-1">
         <button
           type="button"
-          disabled={eEu || ocupado === u.id}
+          disabled={u.deletionPending || ocupado === u.id}
+          onClick={() => setEditando(u)}
+          className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
+          aria-label={`Editar ${u.email}`}
+          title="Editar cota"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          disabled={bloqueada}
           onClick={() => handleBloqueio(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
           aria-label={
@@ -257,7 +421,7 @@ export default function UsuariosAdmin() {
         </button>
         <button
           type="button"
-          disabled={eEu || ocupado === u.id}
+          disabled={bloqueada}
           onClick={() => handleExcluir(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-red-500/15 hover:text-red-400 disabled:opacity-30"
           aria-label={`Excluir ${u.email}`}
@@ -269,14 +433,14 @@ export default function UsuariosAdmin() {
     );
   }
 
-  function SeletorPapel({ u }: { u: ApiUser }) {
+  function seletorPapel(u: UsuarioAdmin) {
     return (
       <select
         value={papelDe(u)}
-        disabled={u.id === eu?.id || ocupado === u.id}
+        disabled={u.id === eu?.id || ocupado === u.id || u.deletionPending}
         onChange={(e) => handlePapel(u, e.target.value as Role)}
         aria-label={`Papel de ${u.email}`}
-        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs disabled:opacity-50"
+        className="rounded-md border border-white/10 bg-[#161616] px-2 py-1 text-xs disabled:opacity-50"
       >
         <option value="user">Comum</option>
         <option value="admin">Admin</option>
@@ -285,7 +449,7 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -293,7 +457,7 @@ export default function UsuariosAdmin() {
           <div>
             <h1 className="text-xl font-semibold sm:text-2xl">Usuários</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Gerencie papéis e o status de cada conta
+              Gerencie papéis, cotas e o status de cada conta
             </p>
           </div>
           <button
@@ -306,21 +470,34 @@ export default function UsuariosAdmin() {
           </button>
         </div>
 
-        {erro && (
+        <input
+          value={termo}
+          onChange={(e) => setTermo(e.target.value)}
+          maxLength={100}
+          placeholder="Buscar por nome ou e-mail..."
+          aria-label="Buscar usuário"
+          className="mb-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:max-w-md"
+        />
+
+        {mensagemErro && (
           <div
             role="alert"
             className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
-            {erro}
+            {mensagemErro}
           </div>
         )}
 
         <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
           {carregando ? (
-            <LoadingSkeleton mensagem="Carregando usuários..." />
+            <p className="py-10 text-center text-sm text-gray-500">
+              Carregando...
+            </p>
           ) : users.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">
-              Nenhum usuário encontrado.
+              {q
+                ? "Nenhum usuário encontrado para essa busca."
+                : "Nenhum usuário encontrado."}
             </p>
           ) : (
             <>
@@ -331,6 +508,7 @@ export default function UsuariosAdmin() {
                 >
                   <span>Usuário</span>
                   <span>Papel</span>
+                  <span>Cota</span>
                   <span>Status</span>
                   <span>Ações</span>
                 </div>
@@ -345,13 +523,12 @@ export default function UsuariosAdmin() {
                         {u.email}
                       </p>
                     </div>
+                    <div>{seletorPapel(u)}</div>
+                    <Uso u={u} />
                     <div>
-                      <SeletorPapel u={u} />
+                      <StatusBadge u={u} />
                     </div>
-                    <div>
-                      <StatusBadge bloqueado={!!u.banned} />
-                    </div>
-                    <Acoes u={u} />
+                    {acoes(u)}
                   </div>
                 ))}
               </div>
@@ -370,16 +547,40 @@ export default function UsuariosAdmin() {
                           {u.email}
                         </p>
                       </div>
-                      <Acoes u={u} />
+                      {acoes(u)}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <RoleBadge role={papelDe(u)} />
-                      <SeletorPapel u={u} />
-                      <StatusBadge bloqueado={!!u.banned} />
+                      {seletorPapel(u)}
+                      <Uso u={u} />
+                      <StatusBadge u={u} />
                     </div>
                   </div>
                 ))}
               </div>
+
+              {totalPaginas > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-400">
+                  <button
+                    type="button"
+                    disabled={pagina <= 1}
+                    onClick={() => irParaPagina(pagina - 1)}
+                    className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+                  <span>
+                    Página {pagina} de {totalPaginas}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={pagina >= totalPaginas}
+                    onClick={() => irParaPagina(pagina + 1)}
+                    className="rounded-lg border border-white/15 px-3 py-1.5 hover:bg-white/5 disabled:opacity-40"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -387,7 +588,12 @@ export default function UsuariosAdmin() {
         <NovoUsuarioModal
           aberto={criando}
           onClose={() => setCriando(false)}
-          onCriado={carregar}
+          onCriado={recarregar}
+        />
+        <EditarUsuarioModal
+          usuario={editando}
+          onClose={() => setEditando(null)}
+          onSalvo={recarregar}
         />
       </main>
     </div>

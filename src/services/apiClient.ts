@@ -1,14 +1,27 @@
 import { API_URL } from "../config/api";
+import { mensagemDaApi } from "../lib/errorMessages";
 
 class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function erroDaResposta(response: Response, fallback?: string): Promise<ApiError> {
+  const body = await response.json().catch(() => null);
+  const code = typeof body?.code === "string" ? body.code : undefined;
+  return new ApiError(
+    mensagemDaApi({ status: response.status, code, message: body?.message, error: body?.error }, fallback),
+    response.status,
+    code,
+  );
+}
+
+async function requestResponse(path: string, options: RequestInit = {}): Promise<Response> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     // manda o cookie de sessão do Better Auth em toda chamada
@@ -19,23 +32,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
 
-  if (!response.ok) {
-    let message = `Erro ${response.status}`;
-    try {
-      const body = await response.json();
-      message = body.message ?? body.error ?? message;
-    } catch {
-      // resposta sem corpo JSON, mantém a mensagem padrão
-    }
-    throw new ApiError(message, response.status);
-  }
+  if (!response.ok) throw await erroDaResposta(response);
 
+  return response;
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await requestResponse(path, options);
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
 export const api = {
   get: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "GET" }),
+
+  getBlob: async (path: string) =>
+    (await requestResponse(path, { headers: { Accept: "text/csv" } })).blob(),
 
   post: <T>(path: string, body?: unknown, options?: RequestInit) =>
     request<T>(path, { ...options, method: "POST", body: body ? JSON.stringify(body) : undefined }),
@@ -44,8 +56,8 @@ export const api = {
     request<T>(path, { ...options, method: "PUT", body: body ? JSON.stringify(body) : undefined }),
 
   patch: <T>(path: string, body?: unknown, options?: RequestInit) =>
-    request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
-
+  request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+  
   delete: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "DELETE" }),
 
   // upload cru: bytes no corpo e dados do arquivo em cabeçalhos (sem FormData)

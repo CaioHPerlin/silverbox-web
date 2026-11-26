@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
 import { authUrl, safeReturnTo } from "../lib/authNavigation";
+import { mensagemDaApi } from "../lib/errorMessages";
+import { passwordGuidance, validarSenha } from "../lib/passwordPolicy";
 import type { CadastroFormData } from "../types";
 
 export default function Cadastro() {
@@ -30,7 +32,7 @@ export default function Cadastro() {
     });
 
     if (error) {
-      setErrorMsg("Já existe uma conta com esse e-mail.");
+      setErrorMsg(mensagemDaApi(error, "Não foi possível criar sua conta. Tente novamente."));
       return;
     }
 
@@ -40,7 +42,10 @@ export default function Cadastro() {
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
-    await authClient.signIn.social({ provider: "google", callbackURL: window.location.origin + returnTo })
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: window.location.origin + returnTo,
+    });
     setGoogleLoading(false);
   }
 
@@ -48,9 +53,16 @@ export default function Cadastro() {
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
         {/* Logo */}
-        <Link to="/" className="mb-6 flex items-center justify-center gap-2" aria-label="Silverbox, página inicial">
-          <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
-          <span className="text-lg font-semibold text-white">Silverbox</span>
+        <Link
+          to="/"
+          className="mb-6 flex items-center justify-center gap-2"
+          aria-label="Silverbox, página inicial"
+        >
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Silverbox"
+            className="h-10 w-42 object-contain"
+          />
         </Link>
 
         {/* Abas Entrar / Criar Conta */}
@@ -84,7 +96,10 @@ export default function Cadastro() {
           )}
 
           {/* E-mail */}
-          <label htmlFor="email" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+          <label
+            htmlFor="email"
+            className="mb-1.5 mt-4 block text-sm text-zinc-300"
+          >
             Email
           </label>
           <input
@@ -103,26 +118,36 @@ export default function Cadastro() {
           )}
 
           {/* Senha */}
-          <label htmlFor="password" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+          <label
+            htmlFor="password"
+            className="mb-1.5 mt-4 block text-sm text-zinc-300"
+          >
             Senha
           </label>
           <input
             id="password"
             type="password"
             autoComplete="new-password"
+            aria-describedby="signup-password-guidance"
             placeholder="Digite sua senha..."
             className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
             {...register("password", {
               required: "Informe uma senha.",
-              minLength: { value: 8, message: "Mínimo de 8 caracteres." },
+              validate: validarSenha,
             })}
           />
+          <p id="signup-password-guidance" className="mb-1 text-xs text-zinc-400">{passwordGuidance}</p>
           {errors.password && (
-            <p className="mb-2 text-xs text-red-400">{errors.password.message}</p>
+            <p className="mb-2 text-xs text-red-400">
+              {errors.password.message}
+            </p>
           )}
 
           {/* Confirmar senha */}
-          <label htmlFor="confirmPassword" className="mb-1.5 mt-4 block text-sm text-zinc-300">
+          <label
+            htmlFor="confirmPassword"
+            className="mb-1.5 mt-4 block text-sm text-zinc-300"
+          >
             Confirmar senha
           </label>
           <input
@@ -133,14 +158,17 @@ export default function Cadastro() {
             className="mb-1 w-full rounded-lg border border-zinc-600 bg-transparent px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#5C93E6] focus:outline-none focus:ring-1 focus:ring-[#5C93E6]"
             {...register("confirmPassword", {
               required: "Confirme sua senha.",
-              validate: (value) => value === password || "As senhas não coincidem.",
+              validate: (value) =>
+                value === password || "As senhas não coincidem.",
             })}
           />
           {errors.confirmPassword && (
-            <p className="mb-2 text-xs text-red-400">{errors.confirmPassword.message}</p>
+            <p className="mb-2 text-xs text-red-400">
+              {errors.confirmPassword.message}
+            </p>
           )}
 
-          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
+          {errorMsg && <p role="alert" className="mb-2 text-xs text-red-400">{errorMsg}</p>}
 
           <button
             type="submit"
@@ -175,27 +203,25 @@ export default function Cadastro() {
   );
 }
 
-function CloudIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 256 256" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M74 176c-27.6 0-50-22.4-50-50 0-25.9 19.7-47.2 45-49.8C75.6 54.6 96.4 40 120 40c26.9 0 49.5 18.8 55.2 44.1C199.3 86.4 218 106.9 218 132c0 26.5-21.5 48-48 48H74z"
-        stroke="currentColor"
-        strokeWidth={14}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.28 1.48-1.13 2.73-2.4 3.58v3h3.88c2.27-2.09 3.54-5.17 3.54-8.82z" />
-      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.88-3c-1.08.72-2.45 1.15-4.05 1.15-3.11 0-5.75-2.1-6.69-4.93H1.3v3.09C3.26 21.3 7.31 24 12 24z" />
-      <path fill="#FBBC05" d="M5.31 14.31A7.2 7.2 0 0 1 4.9 12c0-.8.14-1.58.4-2.31V6.6H1.3A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.3 5.4z" />
-      <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.3 6.6l4 3.09C6.25 6.86 8.89 4.77 12 4.77z" />
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47c-.28 1.48-1.13 2.73-2.4 3.58v3h3.88c2.27-2.09 3.54-5.17 3.54-8.82z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.88-3c-1.08.72-2.45 1.15-4.05 1.15-3.11 0-5.75-2.1-6.69-4.93H1.3v3.09C3.26 21.3 7.31 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.31 14.31A7.2 7.2 0 0 1 4.9 12c0-.8.14-1.58.4-2.31V6.6H1.3A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.3 5.4z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.3 6.6l4 3.09C6.25 6.86 8.89 4.77 12 4.77z"
+      />
     </svg>
   );
 }

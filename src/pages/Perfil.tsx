@@ -1,10 +1,14 @@
 import Sidebar from "../components/Sidebar";
 import { useState, useEffect } from "react";
 import { authClient, useSession } from "../lib/authClient";
+import { mensagemDaApi } from "../lib/errorMessages";
 import { Link } from "react-router-dom";
 import { useCota } from "../hooks/useCota";
 import { formatBytes } from "../lib/format";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import { buscarAvatar, salvarAvatar, removerAvatar } from "../services/avatar";
+import { ApiError } from "../services/apiClient";
+import { EVENTO_COTA } from "../lib/cotaEvents";
 
 function getInitials(name: string) {
   return name
@@ -32,6 +36,9 @@ export default function Perfil() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
 
   //Função para inserir foto
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -59,6 +66,66 @@ export default function Perfil() {
     setAvatarPreview(URL.createObjectURL(file));
   }
 
+  //Função para salvar foto
+  async function handleSaveAvatar() {
+    if (!avatarFile) return;
+
+    setSavingAvatar(true);
+    setAvatarError("");
+
+    try {
+      await salvarAvatar(avatarFile);
+
+      const imagem = await buscarAvatar();
+
+      if (imagem) {
+        setAvatarUrl(URL.createObjectURL(imagem));
+      }
+
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } catch (error) {
+      setAvatarError(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível salvar a foto.",
+      );
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  // Função para remover foto
+  async function handleRemoveAvatar() {
+    const confirmar = window.confirm(
+      "Tem certeza de que deseja remover sua foto de perfil?",
+    );
+
+    if (!confirmar) return;
+
+    setDeletingAvatar(true);
+    setAvatarError("");
+
+    try {
+      await removerAvatar();
+
+      setAvatarUrl(null);
+      setAvatarPreview(null);
+      setAvatarFile(null);
+
+      // Atualiza a cota de armazenamento
+      window.dispatchEvent(new Event(EVENTO_COTA));
+    } catch (error) {
+      setAvatarError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível remover a foto.",
+      );
+    } finally {
+      setDeletingAvatar(false);
+    }
+  }
+
   useEffect(() => {
     return () => {
       if (avatarPreview) {
@@ -66,6 +133,37 @@ export default function Perfil() {
       }
     };
   }, [avatarPreview]);
+
+  //Avatar
+  useEffect(() => {
+    let cancelado = false;
+    let url: string | null = null;
+
+    async function carregarFoto() {
+      try {
+        const imagem = await buscarAvatar();
+
+        if (!imagem || cancelado) return;
+
+        url = URL.createObjectURL(imagem);
+        setAvatarUrl(url);
+      } catch {
+        if (!cancelado) {
+          setAvatarUrl(null);
+        }
+      }
+    }
+
+    carregarFoto();
+
+    return () => {
+      cancelado = true;
+
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, []);
 
   if (error || !session) {
     return (
@@ -97,7 +195,7 @@ export default function Perfil() {
       const { error } = await authClient.updateUser({ name });
 
       if (error) {
-        setNameMessage(error.message || "Não foi possível atualizar o nome.");
+        setNameMessage(mensagemDaApi(error, "Não foi possível atualizar o nome."));
         return;
       }
 
@@ -122,7 +220,7 @@ export default function Perfil() {
   });
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -139,10 +237,10 @@ export default function Perfil() {
               <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-4 sm:gap-5">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-500/20 text-xl font-semibold text-blue-400 sm:h-20 sm:w-20 sm:text-2xl">
-                    {avatarPreview ? (
+                    {avatarPreview || avatarUrl ? (
                       <img
-                        src={avatarPreview}
-                        alt="Prévia da foto de perfil"
+                        src={avatarPreview || avatarUrl!}
+                        alt="Foto de perfil"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -193,6 +291,28 @@ export default function Perfil() {
                         }}
                       />
                     </label>
+
+                    {avatarUrl && !avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        disabled={deletingAvatar || savingAvatar}
+                        className="rounded-lg border border-red-500/30 px-4 py-3 text-sm text-red-400 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2.5"
+                      >
+                        {deletingAvatar ? "Removendo..." : "Remover foto"}
+                      </button>
+                    )}
+
+                    {avatarFile && (
+                      <button
+                        type="button"
+                        onClick={handleSaveAvatar}
+                        disabled={savingAvatar}
+                        className="rounded-lg bg-[#5C93E6] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 sm:py-2.5"
+                      >
+                        {savingAvatar ? "Salvando..." : "Salvar foto"}
+                      </button>
+                    )}
 
                     {avatarPreview && (
                       <button
@@ -334,15 +454,29 @@ export default function Perfil() {
                   </span>
                 </div>
 
-                {cota && <div className="h-2.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Armazenamento utilizado" aria-valuenow={usedPercent} aria-valuemin={0} aria-valuemax={100}>
+                {cota && (
                   <div
-                    className="h-full rounded-full bg-blue-500 transition-all"
-                    style={{
-                      width: `${usedPercent}%`,
-                    }}
-                  />
-                </div>}
-                <Link to="/planos" className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm text-blue-400 transition hover:bg-white/5">Conhecer os planos</Link>
+                    className="h-2.5 overflow-hidden rounded-full bg-white/10"
+                    role="progressbar"
+                    aria-label="Armazenamento utilizado"
+                    aria-valuenow={usedPercent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div
+                      className="h-full rounded-full bg-blue-500 transition-all"
+                      style={{
+                        width: `${usedPercent}%`,
+                      }}
+                    />
+                  </div>
+                )}
+                <Link
+                  to="/planos"
+                  className="mt-4 inline-flex rounded-lg border border-white/15 px-4 py-2 text-sm text-blue-400 transition hover:bg-white/5"
+                >
+                  Conhecer os planos
+                </Link>
               </div>
             </div>
           </>

@@ -15,6 +15,11 @@ import {
   moverParaLixeira,
   type ArquivoApi,
 } from "../services/files";
+import { buscarAvatar } from "../services/avatar";
+import { useNavigate } from "react-router-dom";
+import { useBusca } from "../hooks/useBusca";
+import { textoDoLocal, type ItemBusca } from "../services/search";
+import { listarPastas } from "../services/folders";
 
 type ItemType = "pdf" | "image" | "doc" | "sheet" | "zip" | "other";
 
@@ -92,6 +97,30 @@ function greeting() {
   return "Boa noite";
 }
 
+async function listarArquivosDeTodasAsPastas(
+  folderId: number | null = null,
+): Promise<ArquivoApi[]> {
+  const primeiraPagina = await listarArquivos(folderId, 1, 100);
+
+  const arquivos = [...primeiraPagina.files];
+  const totalPaginas = Math.ceil(primeiraPagina.total / 100);
+
+  for (let pagina = 2; pagina <= totalPaginas; pagina++) {
+    const resposta = await listarArquivos(folderId, pagina, 100);
+    arquivos.push(...resposta.files);
+  }
+
+  const pastas = await listarPastas(folderId);
+
+  for (const pasta of pastas) {
+    const arquivosDaSubpasta = await listarArquivosDeTodasAsPastas(pasta.id);
+
+    arquivos.push(...arquivosDaSubpasta);
+  }
+
+  return arquivos;
+}
+
 export default function Home() {
   const { data: session, isPending } = useSession();
 
@@ -103,6 +132,9 @@ export default function Home() {
   const [renamingFile, setRenamingFile] = useState<SelectedFile | null>(null);
   const [movingFile, setMovingFile] = useState<SelectedFile | null>(null);
 
+  //Avatar - foto de perfil
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
   const { register, control } = useForm<SearchForm>({
     defaultValues: { query: "" },
   });
@@ -113,12 +145,47 @@ export default function Home() {
   });
 
   const pesquisa = (valorPesquisa ?? "").trim().toLowerCase();
+  const navigate = useNavigate();
+
+  const busca = useBusca((valorPesquisa ?? "").trim(), "all", null);
+
+  // Carrega a foto de perfil
+  useEffect(() => {
+    let cancelado = false;
+    let url: string | null = null;
+
+    async function carregarFoto() {
+      try {
+        const imagem = await buscarAvatar();
+
+        if (!imagem || cancelado) return;
+
+        url = URL.createObjectURL(imagem);
+        setAvatarUrl(url);
+      } catch {
+        if (!cancelado) {
+          setAvatarUrl(null);
+        }
+      }
+    }
+
+    carregarFoto();
+
+    return () => {
+      cancelado = true;
+
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function carregarArquivos() {
       try {
-        const resposta = await listarArquivos(null, 1, 50);
-        setArquivos(resposta.files);
+        const todosArquivos = await listarArquivosDeTodasAsPastas();
+
+        setArquivos(todosArquivos);
       } catch {
         setErro("Não foi possível carregar seus arquivos.");
       } finally {
@@ -146,34 +213,38 @@ export default function Home() {
   }
 
   async function handleRenomear(id: string, newName: string) {
-    try {
-      await renomearArquivo(Number(id), newName);
-
-      setArquivos((atuais) =>
-        atuais.map((arquivo) =>
-          arquivo.id === Number(id)
-            ? { ...arquivo, originalName: newName }
-            : arquivo,
-        ),
-      );
-
-      setRenamingFile(null);
-    } catch {
-      setErro("Não foi possível renomear o arquivo.");
-    }
+    const renomeado = await renomearArquivo(Number(id), newName);
+    setArquivos((atuais) =>
+      atuais.map((arquivo) =>
+        arquivo.id === renomeado.id ? { ...arquivo, originalName: renomeado.originalName } : arquivo,
+      ),
+    );
   }
 
   async function handleMover(id: string, folderId: number | null) {
     try {
       await moverArquivo(Number(id), folderId);
 
-      const resposta = await listarArquivos(null, 1, 50);
-      setArquivos(resposta.files);
+      const todosArquivos = await listarArquivosDeTodasAsPastas();
+      setArquivos(todosArquivos);
 
       setMovingFile(null);
     } catch {
       setErro("Não foi possível mover o arquivo.");
     }
+  }
+
+  function abrirResultado(item: ItemBusca) {
+    const caminho =
+      item.kind === "folder"
+        ? [...item.path, { id: item.id, name: item.name }]
+        : item.path;
+
+    navigate("/arquivos", {
+      state: {
+        searchPath: caminho,
+      },
+    });
   }
 
   if (isPending) return <LoadingSkeleton mensagem="Preparando sua nuvem..." />;
@@ -244,7 +315,7 @@ export default function Home() {
   const gruposRecentes = agruparPorData(arquivosFiltrados);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -273,8 +344,16 @@ export default function Home() {
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-11 pr-3 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-sm font-semibold text-blue-400">
-            {getInitials(userName)}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-500/20 text-sm font-semibold text-blue-400">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Foto de perfil"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              getInitials(userName)
+            )}
           </div>
         </form>
 
@@ -282,10 +361,107 @@ export default function Home() {
         <h1 className="text-xl font-semibold mb-1">
           {greeting()}, {userName}!
         </h1>
-        <p className="text-sm text-gray-500 mb-4">Acessados recentemente</p>
+        <p className="text-sm text-gray-500 mb-4">
+          {busca.ativa ? "Resultados da pesquisa" : "Acessados recentemente"}
+        </p>
 
-        {/* Arquivos recentes */}
-        {carregando ? (
+        {/* Resultados da busca no servidor */}
+        {busca.ativa ? (
+          busca.carregando ? (
+            <LoadingSkeleton mensagem="Buscando seus arquivos..." />
+          ) : busca.erro ? (
+            <p className="text-sm text-red-400">{busca.erro}</p>
+          ) : busca.total === 0 ? (
+            <p className="text-sm text-gray-500">
+              Nenhum arquivo ou pasta encontrado.
+            </p>
+          ) : (
+            <>
+              <p className="mb-4 text-xs text-gray-500">
+                {busca.total} resultado(s) encontrado(s)
+              </p>
+
+              <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {busca.itens.map((item) => (
+                  <button
+                    key={`${item.kind}-${item.id}`}
+                    type="button"
+                    onClick={() => abrirResultado(item)}
+                    className="flex w-full min-w-0 flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:border-blue-500/40 hover:bg-white/[0.07]"
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.kind === "folder" ? (
+                        <svg
+                          className="h-8 w-8 shrink-0 text-yellow-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                          />
+                        </svg>
+                      ) : (
+                        <ItemIcon
+                          type={tipoDoArquivo(item.name, item.mimeType)}
+                        />
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {item.name}
+                        </p>
+
+                        <p className="truncate text-xs text-gray-500">
+                          {textoDoLocal(item.path)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-gray-500">
+                        {item.kind === "folder" ? "Pasta" : "Arquivo"}
+                      </span>
+
+                      <span className="text-xs text-blue-400">Abrir →</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Paginação da busca */}
+              {busca.totalPaginas > 1 && (
+                <div className="mt-6 flex items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    disabled={busca.pagina <= 1}
+                    onClick={() => busca.setPagina(busca.pagina - 1)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="text-sm text-gray-400">
+                    Página {busca.pagina} de {busca.totalPaginas}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={busca.pagina >= busca.totalPaginas}
+                    onClick={() => busca.setPagina(busca.pagina + 1)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
+            </>
+          )
+        ) : /* Arquivos recentes: comportamento original */
+        carregando ? (
           <LoadingSkeleton mensagem="Carregando seus arquivos..." />
         ) : erro ? (
           <p className="text-sm text-red-400">{erro}</p>

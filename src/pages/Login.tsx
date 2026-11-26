@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/authClient";
 import { authUrl, safeReturnTo } from "../lib/authNavigation";
+import { mensagemDaApi } from "../lib/errorMessages";
 import type { LoginFormData } from "../types";
 
 export default function Login() {
@@ -27,7 +28,9 @@ export default function Login() {
     });
 
     if (error) {
-      setErrorMsg("E-mail ou senha incorretos.");
+      setErrorMsg(error.status === 401
+        ? "E-mail ou senha incorretos."
+        : mensagemDaApi(error, "Não foi possível entrar. Tente novamente."));
       return;
     }
 
@@ -49,9 +52,16 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
         {/* Logo */}
-        <Link to="/" className="mb-6 flex items-center justify-center gap-2" aria-label="Silverbox, página inicial">
-          <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
-          <span className="text-lg font-semibold text-white">Silverbox</span>
+        <Link
+          to="/"
+          className="mb-6 flex items-center justify-center gap-2"
+          aria-label="Silverbox, página inicial"
+        >
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Silverbox"
+            className="h-10 w-42 object-contain"
+          />
         </Link>
 
         {/* Abas Entrar / Criar Conta */}
@@ -108,7 +118,7 @@ export default function Login() {
             </p>
           )}
 
-          {errorMsg && <p className="mb-2 text-xs text-red-400">{errorMsg}</p>}
+          {errorMsg && <p role="alert" className="mb-2 text-xs text-red-400">{errorMsg}</p>}
 
           <div className="mb-4 mt-2 text-right">
             <Link
@@ -154,25 +164,6 @@ export default function Login() {
         </form>
       </div>
     </div>
-  );
-}
-
-function CloudIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 256 256"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M74 176c-27.6 0-50-22.4-50-50 0-25.9 19.7-47.2 45-49.8C75.6 54.6 96.4 40 120 40c26.9 0 49.5 18.8 55.2 44.1C199.3 86.4 218 106.9 218 132c0 26.5-21.5 48-48 48H74z"
-        stroke="currentColor"
-        strokeWidth={14}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 

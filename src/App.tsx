@@ -39,6 +39,7 @@ export default function App() {
         </Route>
         {/**Rotas de Administrador */}
         <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/arquivos" element={<ArquivosAdmin />} />
           <Route path="/admin/usuarios" element={<UsuariosAdmin />} />

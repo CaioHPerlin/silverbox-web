@@ -9,10 +9,14 @@ import LoadingSkeleton from "../../components/LoadingSkeleton";
 // ---- Contrato esperado de GET /admin/files ----
 interface AdminFile {
   id: number;
+  folderId: number | null;
   originalName: string;
   sizeBytes: number;
   mimeType: string | null;
+  isDeleted: boolean;
   createdAt: string;
+  updatedAt: string;
+  ownerId: number;
   ownerName: string | null;
   ownerEmail: string | null;
 }
@@ -93,8 +97,8 @@ export default function ArquivosAdmin() {
       });
       if (busca) params.set("q", busca);
       const r = await api.get<AdminFilesResponse>(`/admin/files?${params}`);
-      setFiles(r.files);
-      setTotal(r.total);
+      setFiles(r.files ?? []);
+      setTotal(r.total ?? 0);
       setPendente(false);
       setErro(null);
     } catch (e) {
@@ -112,8 +116,12 @@ export default function ArquivosAdmin() {
 
   useEffect(() => {
     let ativo = true;
-    void Promise.resolve().then(() => { if (ativo) return carregar(); });
-    return () => { ativo = false; };
+    void Promise.resolve().then(() => {
+      if (ativo) return carregar();
+    });
+    return () => {
+      ativo = false;
+    };
   }, [carregar]);
 
   function handleBaixar(id: number) {
@@ -121,12 +129,11 @@ export default function ArquivosAdmin() {
   }
 
   async function handleExcluir(f: AdminFile) {
-    if (
-      !window.confirm(
-        `Mover "${f.originalName}" de ${f.ownerName ?? f.ownerEmail ?? "usuário"} para a lixeira?`,
-      )
-    )
-      return;
+    const nome = f.originalName ?? "arquivo";
+    const dono = f.ownerName ?? f.ownerEmail ?? "usuário";
+
+    if (!window.confirm(`Mover "${nome}" de ${dono} para a lixeira?`)) return;
+
     try {
       await api.delete(`/admin/files/${f.id}`);
       await carregar();
@@ -161,7 +168,7 @@ export default function ArquivosAdmin() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">

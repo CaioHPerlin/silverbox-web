@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Sidebar from "../components/Sidebar";
 import { formatBytes } from "../lib/format";
@@ -57,16 +57,18 @@ function FileIcon({ type }: { type: FileType }) {
 }
 
 const estiloStatus: Record<StatusLink, string> = {
-  ativo: "bg-emerald-500/20 text-emerald-400",
-  expirado: "bg-amber-500/20 text-amber-400",
-  revogado: "bg-red-500/20 text-red-400",
+  ativo: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400",
+  expirado: "border-amber-500/20 bg-amber-500/5 text-amber-400",
+  revogado: "border-red-500/20 bg-red-500/5 text-red-400",
 };
 
 function StatusBadge({ status }: { status: StatusLink }) {
   return (
     <span
-      className={`inline-block rounded-md px-2.5 py-1 text-xs font-medium ${estiloStatus[status]}`}
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${estiloStatus[status]}`}
     >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+
       {status === "ativo"
         ? "Ativo"
         : status === "expirado"
@@ -78,44 +80,75 @@ function StatusBadge({ status }: { status: StatusLink }) {
 
 function validade(l: LinkApi, status: StatusLink) {
   if (status === "revogado" && l.revokedAt)
-    return `revogado em ${new Date(l.revokedAt).toLocaleDateString("pt-BR")}`;
+    return `Revogado em ${new Date(l.revokedAt).toLocaleDateString("pt-BR")}`;
   const data = new Date(l.expiresAt).toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
-  return status === "ativo" ? `expira em ${data}` : `expirou em ${data}`;
+  return status === "ativo" ? `Expira em ${data}` : `Expirou em ${data}`;
 }
 
 export default function Compartilhados() {
   const { register, watch } = useForm<SearchForm>({
     defaultValues: { query: "" },
   });
-  const query = watch("query").toLowerCase();
+  const query = watch("query").trim();
+
+  const POR_PAGINA = 10;
 
   const [links, setLinks] = useState<LinkApi[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [atualizacao, setAtualizacao] = useState(0);
+
   const [carregando, setCarregando] = useState(true);
   const [pendente, setPendente] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
-    setCarregando(true);
-    try {
-      setLinks(await listarMeusLinks());
-      setPendente(false);
-      setErro(null);
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) setPendente(true);
-      else setErro(mensagemDeErro(e));
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
+  useEffect(() => {
+    setPagina(1);
+  }, [query]);
 
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    let ativo = true;
+
+    async function carregar() {
+      setCarregando(true);
+
+      try {
+        const resposta = await listarMeusLinks(pagina, POR_PAGINA, query);
+
+        if (!ativo) return;
+
+        setLinks(resposta.shares);
+        setTotal(resposta.total);
+        setPendente(false);
+        setErro(null);
+      } catch (e) {
+        if (!ativo) return;
+
+        if (e instanceof ApiError && e.status === 404) {
+          setPendente(true);
+        } else {
+          setErro(mensagemDeErro(e));
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    void carregar();
+
+    return () => {
+      ativo = false;
+    };
+  }, [pagina, query, atualizacao]);
+
+  const totalPaginas = Math.ceil(total / POR_PAGINA);
 
   async function handleRevogar(l: LinkApi) {
     if (
@@ -126,15 +159,12 @@ export default function Compartilhados() {
       return;
     try {
       await revogarLinkCompartilhado(l.fileId, l.id);
+      setErro(null);
+      setAtualizacao((valor) => valor + 1);
     } catch (e) {
       setErro(mensagemDeErro(e));
     }
-    await carregar();
   }
-
-  const filtered = links.filter((l) =>
-    l.fileName.toLowerCase().includes(query),
-  );
 
   function Acao({ l, status }: { l: LinkApi; status: StatusLink }) {
     return status === "ativo" ? (
@@ -151,14 +181,14 @@ export default function Compartilhados() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <Sidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
         <h1 className="text-2xl font-semibold">Compartilhados</h1>
         <p className="mb-6 mt-1 text-sm text-gray-500">
-          Links temporários que você criou. Quem tem o link baixa o arquivo sem
-          precisar de login.
+          Veja agora os links temporários que você criou para compartilhar seus
+          arquivos.
         </p>
 
         {erro && (
@@ -209,27 +239,28 @@ export default function Compartilhados() {
 
             {carregando ? (
               <LoadingSkeleton mensagem="Carregando compartilhamentos..." />
-            ) : filtered.length === 0 ? (
+            ) : links.length === 0 ? (
               <p className="rounded-xl border border-white/10 px-4 py-10 text-center text-sm text-gray-500">
                 Nenhum link encontrado.
               </p>
             ) : (
               <>
                 {/* Tabela: computador e telas maiores */}
-                <div className="hidden overflow-hidden rounded-xl border border-white/10 sm:block">
-                  <div className="grid grid-cols-[minmax(0,1fr)_90px_190px_90px_90px] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
+                <div className="hidden overflow-hidden rounded-xl border border-white/10 xl:block">
+                  <div className="grid grid-cols-[minmax(0,1fr)_90px_110px_190px_90px_90px] gap-3 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                     <span>Arquivo</span>
                     <span>Tamanho</span>
+                    <span>Permissão</span>
                     <span>Validade</span>
                     <span>Status</span>
                     <span />
                   </div>
-                  {filtered.map((l) => {
+                  {links.map((l) => {
                     const status = statusDoLink(l);
                     return (
                       <div
                         key={l.id}
-                        className="grid grid-cols-[minmax(0,1fr)_90px_190px_90px_90px] items-center gap-3 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5"
+                        className="grid grid-cols-[minmax(0,1fr)_90px_110px_190px_90px_90px] items-center gap-3 border-b border-white/5 px-4 py-3 last:border-0 hover:bg-white/5"
                       >
                         <div className="flex min-w-0 items-center gap-3">
                           <FileIcon
@@ -239,6 +270,11 @@ export default function Compartilhados() {
                         </div>
                         <span className="text-sm text-gray-400">
                           {formatBytes(l.sizeBytes)}
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          {l.permission === "view"
+                            ? "Visualização"
+                            : "Download"}
                         </span>
                         <span className="text-sm text-gray-400">
                           {validade(l, status)}
@@ -251,13 +287,13 @@ export default function Compartilhados() {
                 </div>
 
                 {/* Cartões: celular */}
-                <div className="space-y-3 sm:hidden">
-                  {filtered.map((l) => {
+                <div className="space-y-3 xl:hidden">
+                  {links.map((l) => {
                     const status = statusDoLink(l);
                     return (
                       <article
                         key={l.id}
-                        className="min-w-0 rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                        className="min-w-0 rounded-xl border border-white/10 bg-white/3 p-3"
                       >
                         <div className="flex min-w-0 items-start gap-3">
                           <FileIcon
@@ -268,7 +304,13 @@ export default function Compartilhados() {
                               {l.fileName}
                             </p>
                             <p className="mt-1 text-xs text-gray-400">
-                              {formatBytes(l.sizeBytes)} · {validade(l, status)}
+                              {formatBytes(l.sizeBytes)} ·
+                              {l.permission === "view"
+                                ? " Visualização"
+                                : " Download"}
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {validade(l, status)}
                             </p>
                             <div className="mt-2 flex items-center justify-between gap-2">
                               <StatusBadge status={status} />
@@ -280,6 +322,40 @@ export default function Compartilhados() {
                     );
                   })}
                 </div>
+
+                {total > 0 && (
+                  <div className="mt-6 flex flex-col items-center justify-between gap-3 sm:flex-row">
+                    <p className="text-sm text-gray-500">
+                      Exibindo {(pagina - 1) * POR_PAGINA + 1} a{" "}
+                      {Math.min(pagina * POR_PAGINA, total)} de {total}{" "}
+                      compartilhamentos
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPagina((atual) => atual - 1)}
+                        disabled={pagina === 1 || carregando}
+                        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Anterior
+                      </button>
+
+                      <span className="text-sm text-gray-400">
+                        Página {pagina} de {totalPaginas}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setPagina((atual) => atual + 1)}
+                        disabled={pagina >= totalPaginas || carregando}
+                        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </>

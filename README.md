@@ -31,6 +31,17 @@ Logs: `docker compose logs -f web`. Parar: `docker compose down`. O web não gua
 
 O contêiner Nginx não usa o proxy de desenvolvimento. Para apontar o contêiner a outra API: `API_URL=https://api.seudominio docker compose up -d --force-recreate`. Não reconstruir a imagem para mudar a origem: `/runtime-config.js` é gerado no início, sem cache. Usar origens HTTP(S), sem caminho ou barra final. Para sessões diretas, use web/API no mesmo site HTTPS e configure a origem no Better Auth da API; CORS sozinho não altera as regras SameSite do navegador.
 
+## Acesso administrativo
+
+As rotas `/admin/*` exigem sessão e papel `admin`. Anônimo é redirecionado ao
+login; usuário comum vê "Acesso negado". Esconder o menu é só usabilidade: a
+autorização real é feita no servidor.
+
+Para testar: cadastre uma conta comum por `/cadastro` e peça à equipe da API
+para promovê-la (veja o README do `silverbox-api`). Faça logout e login de novo
+após a mudança de papel. Nunca registre e-mails, senhas ou tokens de contas
+administrativas em código, issues ou tickets.
+
 ## Desenvolvimento
 
 Node 24 e pnpm 11:
@@ -44,6 +55,18 @@ pnpm test
 ```
 
 Copiar `.env.example` para `.env` se precisar mudar `VITE_API_URL` no Vite. npm continua suportado: `npm ci`, `npm run dev`, `npm run build`. Os dois lockfiles são versionados e devem ser atualizados juntos. Testes são TypeScript; `pnpm test` verifica o proxy e Docker (porta 5173 livre). Teste somente do proxy: `node --test test/api-proxy.test.ts`.
+
+### Aceite no navegador
+
+Para o aceite de uma entrega, use o navegador disponível. Assim o CI evita baixar e manter navegadores a cada execução. Valide a versão publicada com contas de teste de usuário comum e administrador.
+
+1. Abra uma rota protegida sem sessão e confira o redirecionamento. Entre como usuário comum e confirme o acesso negado à área administrativa. Entre como admin e confira logout e mudança de papel.
+2. Com dados de teste, crie uma pasta, envie e baixe um arquivo, confira as versões, mova um arquivo para a lixeira e restaure-o. Valide compartilhamento, busca e persistência da foto de perfil após recarregar.
+3. Solicite a recuperação na caixa de teste, abra o link, troque a senha e entre com a nova. Confira as mensagens para links expirados ou reutilizados.
+4. Como admin, aplique filtros de período, usuário e ação na auditoria. Confira que a paginação mantém os filtros e que o CSV inclui registros de todas as páginas filtradas.
+5. Confira carregamento, estado vazio, erro e retentativa, confirmação de ações e submissão repetida. Teste acesso direto, recarregamento, página inexistente, teclado e tela estreita.
+
+Registre no PR o commit publicado, as jornadas validadas e os cenários que ficaram pendentes.
 
 A imagem final serve SPA com Nginx sem root (UID101), healthcheck `/health`, assets imutáveis e configuração de API em runtime. Não publica `.env` no build.
 
