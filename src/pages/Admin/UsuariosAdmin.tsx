@@ -167,7 +167,7 @@ function EditarForm({
   e.preventDefault();
   const gb = Number(cotaGb.replace(",", "."));
 
-  let bytes = "";
+  let bytes: string;
   try {
     bytes = gbParaBytes(gb);
   } catch {
@@ -227,6 +227,28 @@ function EditarForm({
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function Uso({ u }: { u: UsuarioAdmin }) {
+  const limite = paraBytes(u.quotaLimitBytes);
+  if (u.usedBytes === undefined)
+    return <span className="text-sm text-gray-300">{formatBytes(limite)}</span>;
+
+  const usado = paraBytes(u.usedBytes);
+  const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+  return (
+    <div className="pr-2">
+      <p className="mb-1 text-xs text-gray-300">
+        {formatBytes(usado)} de {formatBytes(limite)}
+      </p>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full ${pct >= 90 ? "bg-red-500" : "bg-blue-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -332,9 +354,9 @@ export default function UsuariosAdmin() {
   }
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  const colunas = "grid-cols-[1fr_130px_110px_110px_120px]";
+  const colunas = "grid-cols-[1fr_130px_170px_110px_120px]";
 
-  function Acoes({ u }: { u: UsuarioAdmin }) {
+  function acoes(u: UsuarioAdmin) {
     const bloqueada = u.id === eu?.id || ocupado === u.id || u.deletionPending;
     return (
       <div className="flex items-center gap-1">
@@ -372,7 +394,7 @@ export default function UsuariosAdmin() {
     );
   }
 
-  function SeletorPapel({ u }: { u: UsuarioAdmin }) {
+  function seletorPapel(u: UsuarioAdmin) {
     return (
       <select
         value={papelDe(u)}
@@ -451,12 +473,10 @@ export default function UsuariosAdmin() {
                       <p className="truncate text-sm">{u.name}</p>
                       <p className="truncate text-xs text-gray-500">{u.email}</p>
                     </div>
-                    <div><SeletorPapel u={u} /></div>
-                    <span className="text-sm text-gray-300">
-                      {formatBytes(paraBytes(u.quotaLimitBytes))}
-                    </span>
+                    <div>{seletorPapel(u)}</div>
+                    <Uso u={u} />
                     <div><StatusBadge u={u} /></div>
-                    <Acoes u={u} />
+                    {acoes(u)}
                   </div>
                 ))}
               </div>
@@ -470,13 +490,11 @@ export default function UsuariosAdmin() {
                         <p className="truncate text-sm">{u.name}</p>
                         <p className="truncate text-xs text-gray-500">{u.email}</p>
                       </div>
-                      <Acoes u={u} />
+                      {acoes(u)}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <SeletorPapel u={u} />
-                      <span className="text-sm text-gray-300">
-                        Cota: {formatBytes(paraBytes(u.quotaLimitBytes))}
-                      </span>
+                      {seletorPapel(u)}
+                      <Uso u={u} />
                       <StatusBadge u={u} />
                     </div>
                   </div>
