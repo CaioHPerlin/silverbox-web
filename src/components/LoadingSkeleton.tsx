@@ -15,7 +15,7 @@ export default function LoadingSkeleton({ mensagem = "" }: Props) {
         <div className="absolute inset-0 animate-pulse" />
 
         <img
-          src="/minha-nuvem-logo.png"
+          src="/minha-nuvem-logo2.png"
           alt="Logo Minha Nuvem"
           className="h-24 w-24 object-contain animate-pulse"
         />

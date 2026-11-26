@@ -256,9 +256,8 @@ export default function AdminSidebar() {
           <img
             src="/minha-nuvem-logo.png"
             alt="Logo Silverbox"
-            className="h-9 w-9 object-contain"
+            className="h-10 w-35 object-contain"
           />
-          <span className="font-semibold text-white">Silverbox</span>
         </div>
 
         <button
@@ -327,9 +326,8 @@ export default function AdminSidebar() {
             <img
               src="/minha-nuvem-logo.png"
               alt="Logo Silverbox"
-              className="h-9 w-9 object-contain"
+              className="h-10 w-35 object-contain"
             />
-            <span className="font-semibold text-white">Silverbox</span>
           </div>
           <button
             type="button"
@@ -375,11 +373,10 @@ export default function AdminSidebar() {
           <img
             src="/minha-nuvem-logo.png"
             alt="Logo Silverbox"
-            className="h-9 w-9 object-contain"
+            className="h-10 w-42 object-contain"
           />
-          <h1 className="font-semibold text-white">Silverbox</h1>
         </div>
-        <span className="mb-6 inline-block rounded-md bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
+        <span className="mb-6 inline-block rounded-md bg-blue-500/15 px-4 py-2 text-xs font-medium text-blue-300">
           Painel administrativo
         </span>
         <div className="flex min-h-0 flex-1 flex-col">

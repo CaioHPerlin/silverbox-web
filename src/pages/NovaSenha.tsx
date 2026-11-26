@@ -51,8 +51,11 @@ export default function NovaSenha() {
       <div className="w-full max-w-sm rounded-2xl border border-zinc-700 bg-zinc-900 p-8">
         {/* Logo */}
         <div className="mb-6 flex items-center justify-center gap-2">
-          <CloudIcon className="h-6 w-6 text-[#5C93E6]" />
-          <span className="text-lg font-semibold text-white">Silverbox</span>
+          <img
+            src="/minha-nuvem-logo.png"
+            alt="Logo Silverbox"
+            className="h-10 w-42 object-contain"
+          />
         </div>
 
         <h1 className="mb-2 text-center text-base font-semibold text-white">
@@ -162,24 +165,5 @@ export default function NovaSenha() {
         )}
       </div>
     </div>
-  );
-}
-
-function CloudIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 256 256"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M74 176c-27.6 0-50-22.4-50-50 0-25.9 19.7-47.2 45-49.8C75.6 54.6 96.4 40 120 40c26.9 0 49.5 18.8 55.2 44.1C199.3 86.4 218 106.9 218 132c0 26.5-21.5 48-48 48H74z"
-        stroke="currentColor"
-        strokeWidth={14}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

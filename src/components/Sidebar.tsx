@@ -338,9 +338,8 @@ export default function Sidebar() {
           <img
             src="/minha-nuvem-logo.png"
             alt="Logo Silverbox"
-            className="h-9 w-9 object-contain"
+            className="h-10 w-35 object-contain"
           />
-          <span className="font-semibold text-white">Silverbox</span>
         </div>
 
         <button
@@ -409,9 +408,8 @@ export default function Sidebar() {
             <img
               src="/minha-nuvem-logo.png"
               alt="Logo Silverbox"
-              className="h-9 w-9 object-contain"
+              className="h-10 w-42 object-contain"
             />
-            <span className="font-semibold text-white">Silverbox</span>
           </div>
           <button
             type="button"
@@ -448,13 +446,12 @@ export default function Sidebar() {
 
       {/* Sidebar permanente no computador */}
       <aside className="sticky top-0 z-40 hidden h-screen w-56 shrink-0 self-start flex-col overflow-y-auto border-r border-white/10 bg-[#1c1c1c] p-4 md:flex lg:w-64">
-        <div className="mb-6 flex items-center gap-2 px-2 py-2">
+        <div className="mb-1 flex items-center gap-2 px-2 py-2">
           <img
             src="/minha-nuvem-logo.png"
             alt="Logo Silverbox"
-            className="h-6 w-9 object-contain"
+            className="h-10 w-42 object-contain"
           />
-          <h1 className="font-medium text-white">Silverbox</h1>
         </div>
         <div className="flex min-h-0 flex-1 flex-col">
           <NewMenu onAction={handleNewAction} />

@@ -129,18 +129,18 @@ export default function ArquivosAdmin() {
   }
 
   async function handleExcluir(f: AdminFile) {
-  const nome = f.originalName ?? "arquivo";
-  const dono = f.ownerName ?? f.ownerEmail ?? "usuário";
+    const nome = f.originalName ?? "arquivo";
+    const dono = f.ownerName ?? f.ownerEmail ?? "usuário";
 
-  if (!window.confirm(`Mover "${nome}" de ${dono} para a lixeira?`)) return;
+    if (!window.confirm(`Mover "${nome}" de ${dono} para a lixeira?`)) return;
 
-  try {
-    await api.delete(`/admin/files/${f.id}`);
-    await carregar();
-  } catch (e) {
-    setErro(e instanceof Error ? e.message : "Não foi possível excluir.");
+    try {
+      await api.delete(`/admin/files/${f.id}`);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível excluir.");
+    }
   }
-}
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 

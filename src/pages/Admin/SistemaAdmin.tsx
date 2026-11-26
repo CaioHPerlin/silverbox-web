@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { AdminMetricsChart, AdminMetricsSection } from "../../components/AdminMetrics";
+import {
+  AdminMetricsChart,
+  AdminMetricsSection,
+} from "../../components/AdminMetrics";
 import AdminSidebar from "../../components/AdminSidebar";
 import { useAdminMetrics } from "../../hooks/useAdminMetrics";
 import { useCota } from "../../hooks/useCota";
@@ -55,7 +58,12 @@ function decimalCount(value: number) {
 export default function SistemaAdmin() {
   const [period, setPeriod] = useState<AdminMetricsPeriod>(7);
   const { metrics, error, loading, atualizar } = useAdminMetrics(period);
-  const { cota, carregandoCota, erroCota, atualizar: atualizarCota } = useCota();
+  const {
+    cota,
+    carregandoCota,
+    erroCota,
+    atualizar: atualizarCota,
+  } = useCota();
   const [estado, setEstado] = useState<EstadoApi>("verificando");
   const [verifiedAt, setVerifiedAt] = useState<Date | null>(null);
 
@@ -137,7 +145,9 @@ export default function SistemaAdmin() {
           onPeriodChange={setPeriod}
           loading={loading}
           error={error}
-          onRetry={() => { void atualizar(); }}
+          onRetry={() => {
+            void atualizar();
+          }}
         >
           {metrics && (
             <div className="space-y-8">
@@ -149,7 +159,10 @@ export default function SistemaAdmin() {
                   Armazenamento e arquivos
                 </h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <StatCard label="Espaço usado" value={formatDecimalBytes(metrics.storage.usedBytes)} />
+                  <StatCard
+                    label="Espaço usado"
+                    value={formatDecimalBytes(metrics.storage.usedBytes)}
+                  />
                   <StatCard
                     label="Espaço disponível"
                     value={formatDecimalBytes(metrics.storage.availableBytes)}
@@ -188,7 +201,9 @@ export default function SistemaAdmin() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <StatCard
                     label="Espaço disponível no disco"
-                    value={formatDecimalBytes(metrics.storage.diskAvailableBytes)}
+                    value={formatDecimalBytes(
+                      metrics.storage.diskAvailableBytes,
+                    )}
                   />
                   <StatCard
                     label="Capacidade total do disco"
@@ -211,7 +226,7 @@ export default function SistemaAdmin() {
         </AdminMetricsSection>
 
         <section
-          className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
+          className="mt-6 rounded-xl border border-white/10 bg-white/3 p-4 sm:p-5"
           aria-busy={carregandoCota}
         >
           <h2 className="text-sm font-medium text-gray-200">Minha cota</h2>
@@ -245,22 +260,34 @@ export default function SistemaAdmin() {
                     style={{ width: `${usedPercent}%` }}
                   />
                 </div>
-                <p className="mt-2 text-xs text-gray-500">A cota inclui arquivos na lixeira e versões antigas.</p>
+                <p className="mt-2 text-xs text-gray-500">
+                  A cota inclui arquivos na lixeira e versões antigas.
+                </p>
               </div>
             </div>
           ) : erroCota ? (
-            <div className="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between" role="alert">
-              <span className="text-red-300">Não foi possível carregar sua cota.</span>
+            <div
+              className="mt-3 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+              role="alert"
+            >
+              <span className="text-red-300">
+                Não foi possível carregar sua cota.
+              </span>
               <button
                 type="button"
-                onClick={() => { void atualizarCota(); }}
+                onClick={() => {
+                  void atualizarCota();
+                }}
                 className="min-h-9 rounded-lg border border-white/15 px-3 text-gray-200 transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-blue-400"
               >
                 Tentar novamente
               </button>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-gray-400" role={carregandoCota ? "status" : undefined}>
+            <p
+              className="mt-3 text-sm text-gray-400"
+              role={carregandoCota ? "status" : undefined}
+            >
               {carregandoCota ? "Carregando cota..." : "Cota indisponível."}
             </p>
           )}

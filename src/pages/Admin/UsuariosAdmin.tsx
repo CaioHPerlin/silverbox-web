@@ -106,22 +106,57 @@ function NovoUsuarioModal({
       >
         <h2 className="text-lg font-semibold">Novo usuário</h2>
         {erro && (
-          <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {erro}
           </div>
         )}
-        <input className={campo} placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
-        <input className={campo} type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className={campo} type="password" placeholder="Senha (8 a 128 caracteres)" value={senha} onChange={(e) => setSenha(e.target.value)} required />
-        <select className={campo} value={papel} onChange={(e) => setPapel(e.target.value as Role)}>
+        <input
+          className={campo}
+          placeholder="Nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+        />
+        <input
+          className={campo}
+          type="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          className={campo}
+          type="password"
+          placeholder="Senha (8 a 128 caracteres)"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          required
+        />
+        <select
+          className={campo}
+          value={papel}
+          onChange={(e) => setPapel(e.target.value as Role)}
+        >
           <option value="user">Comum</option>
           <option value="admin">Admin</option>
         </select>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+          >
             Cancelar
           </button>
-          <button type="submit" disabled={salvando} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={salvando}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50"
+          >
             {salvando ? "Criando..." : "Criar"}
           </button>
         </div>
@@ -143,7 +178,12 @@ function EditarUsuarioModal({
   if (!usuario) return null;
   // key remonta o formulário ao trocar de usuário
   return (
-    <EditarForm key={usuario.id} usuario={usuario} onClose={onClose} onSalvo={onSalvo} />
+    <EditarForm
+      key={usuario.id}
+      usuario={usuario}
+      onClose={onClose}
+      onSalvo={onSalvo}
+    />
   );
 }
 
@@ -156,7 +196,6 @@ function EditarForm({
   onClose: () => void;
   onSalvo: () => void;
 }) {
-  
   const [cotaGb, setCotaGb] = useState(
     String(+(paraBytes(usuario.quotaLimitBytes) / 1024 ** 3).toFixed(2)),
   );
@@ -164,29 +203,29 @@ function EditarForm({
   const [salvando, setSalvando] = useState(false);
 
   async function enviar(e: React.FormEvent) {
-  e.preventDefault();
-  const gb = Number(cotaGb.replace(",", "."));
+    e.preventDefault();
+    const gb = Number(cotaGb.replace(",", "."));
 
-  let bytes: string;
-  try {
-    bytes = gbParaBytes(gb);
-  } catch {
-    return setErro("Informe uma cota válida, maior que zero.");
-  }
+    let bytes: string;
+    try {
+      bytes = gbParaBytes(gb);
+    } catch {
+      return setErro("Informe uma cota válida, maior que zero.");
+    }
 
-  setSalvando(true);
-  setErro(null);
-  try {
-    await editarUsuario(usuario.id, { quotaLimitBytes: bytes });
-  } catch (err) {
+    setSalvando(true);
+    setErro(null);
+    try {
+      await editarUsuario(usuario.id, { quotaLimitBytes: bytes });
+    } catch (err) {
+      setSalvando(false);
+      setErro(mensagemAdmin(err));
+      return;
+    }
     setSalvando(false);
-    setErro(mensagemAdmin(err));
-    return;
+    onSalvo();
+    onClose();
   }
-  setSalvando(false);
-  onSalvo();
-  onClose();
-}
 
   return (
     <div
@@ -203,11 +242,14 @@ function EditarForm({
         <h2 className="text-lg font-semibold">Editar conta</h2>
         <p className="truncate text-sm text-gray-500">{usuario.email}</p>
         {erro && (
-          <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {erro}
           </div>
         )}
-        
+
         <label className="block text-xs text-gray-400">
           Cota (GB)
           <input
@@ -219,10 +261,18 @@ function EditarForm({
           />
         </label>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+          >
             Cancelar
           </button>
-          <button type="submit" disabled={salvando} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={salvando}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 disabled:opacity-50"
+          >
             {salvando ? "Salvando..." : "Salvar"}
           </button>
         </div>
@@ -237,7 +287,8 @@ function Uso({ u }: { u: UsuarioAdmin }) {
     return <span className="text-sm text-gray-300">{formatBytes(limite)}</span>;
 
   const usado = paraBytes(u.usedBytes);
-  const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
+  const pct =
+    limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
   return (
     <div className="pr-2">
       <p className="mb-1 text-xs text-gray-300">
@@ -290,7 +341,11 @@ export default function UsuariosAdmin() {
         setErroLista(null);
       })
       .catch((e) => {
-        if (ac.signal.aborted || (e instanceof Error && e.name === "AbortError")) return;
+        if (
+          ac.signal.aborted ||
+          (e instanceof Error && e.name === "AbortError")
+        )
+          return;
         setUsers([]);
         setTotal(0);
         setErroLista(mensagemAdmin(e));
@@ -316,7 +371,9 @@ export default function UsuariosAdmin() {
     setOcupado(id);
     setErro(null);
     try {
-      const r = (await acao()) as { error?: { message?: string; status?: number } | null } | undefined;
+      const r = (await acao()) as
+        | { error?: { message?: string; status?: number } | null }
+        | undefined;
       if (r?.error) {
         const msg = (r.error.message ?? "").toLowerCase();
         setErro(
@@ -333,7 +390,8 @@ export default function UsuariosAdmin() {
   }
 
   function handleExcluir(u: UsuarioAdmin) {
-    if (!window.confirm(`Excluir ${u.email}? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Excluir ${u.email}? Esta ação não pode ser desfeita.`))
+      return;
     executar(u.id, () => authClient.admin.removeUser({ userId: u.id }));
   }
 
@@ -377,10 +435,16 @@ export default function UsuariosAdmin() {
           disabled={bloqueada}
           onClick={() => handleBloqueio(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
-          aria-label={u.banned ? `Desbloquear ${u.email}` : `Bloquear ${u.email}`}
+          aria-label={
+            u.banned ? `Desbloquear ${u.email}` : `Bloquear ${u.email}`
+          }
           title={u.banned ? "Desbloquear" : "Bloquear"}
         >
-          {u.banned ? <CheckCircle2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+          {u.banned ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : (
+            <Ban className="h-4 w-4" />
+          )}
         </button>
         <button
           type="button"
@@ -412,7 +476,7 @@ export default function UsuariosAdmin() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -443,23 +507,32 @@ export default function UsuariosAdmin() {
         />
 
         {mensagemErro && (
-          <div role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div
+            role="alert"
+            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             {mensagemErro}
           </div>
         )}
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
+        <div className="rounded-xl border border-white/10 bg-white/2 p-4 sm:p-6">
           {carregando ? (
-            <p className="py-10 text-center text-sm text-gray-500">Carregando...</p>
+            <p className="py-10 text-center text-sm text-gray-500">
+              Carregando...
+            </p>
           ) : users.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">
-              {q ? "Nenhum usuário encontrado para essa busca." : "Nenhum usuário encontrado."}
+              {q
+                ? "Nenhum usuário encontrado para essa busca."
+                : "Nenhum usuário encontrado."}
             </p>
           ) : (
             <>
               {/* Tabela: desktop */}
               <div className="hidden lg:block">
-                <div className={`grid ${colunas} border-b border-white/10 px-2 py-3 text-xs uppercase tracking-wide text-gray-500`}>
+                <div
+                  className={`grid ${colunas} border-b border-white/10 px-2 py-3 text-xs uppercase tracking-wide text-gray-500`}
+                >
                   <span>Usuário</span>
                   <span>Papel</span>
                   <span>Cota</span>
@@ -473,11 +546,15 @@ export default function UsuariosAdmin() {
                   >
                     <div className="min-w-0 pr-2">
                       <p className="truncate text-sm">{u.name}</p>
-                      <p className="truncate text-xs text-gray-500">{u.email}</p>
+                      <p className="truncate text-xs text-gray-500">
+                        {u.email}
+                      </p>
                     </div>
                     <div>{seletorPapel(u)}</div>
                     <Uso u={u} />
-                    <div><StatusBadge u={u} /></div>
+                    <div>
+                      <StatusBadge u={u} />
+                    </div>
                     {acoes(u)}
                   </div>
                 ))}
@@ -486,11 +563,16 @@ export default function UsuariosAdmin() {
               {/* Cartões: celular e tablet */}
               <div className="flex flex-col gap-2 lg:hidden">
                 {users.map((u) => (
-                  <div key={u.id} className="rounded-xl border border-white/10 px-4 py-3">
+                  <div
+                    key={u.id}
+                    className="rounded-xl border border-white/10 px-4 py-3"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm">{u.name}</p>
-                        <p className="truncate text-xs text-gray-500">{u.email}</p>
+                        <p className="truncate text-xs text-gray-500">
+                          {u.email}
+                        </p>
                       </div>
                       {acoes(u)}
                     </div>

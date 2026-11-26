@@ -12,7 +12,12 @@ import {
 } from "../../services/adminAudit";
 
 const POR_PAGINA = 50;
-const SEM_FILTROS: FiltrosAuditoria = { inicio: "", fim: "", usuario: "", acao: "" };
+const SEM_FILTROS: FiltrosAuditoria = {
+  inicio: "",
+  fim: "",
+  usuario: "",
+  acao: "",
+};
 const CAMPO_FILTRO =
   "w-full rounded-lg border border-white/15 bg-[#18181b] px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none";
 
@@ -93,7 +98,12 @@ export default function AuditoriaAdmin() {
   useEffect(() => {
     const controller = new AbortController();
 
-    listarAuditoria(consulta.filtros, consulta.pagina, POR_PAGINA, controller.signal)
+    listarAuditoria(
+      consulta.filtros,
+      consulta.pagina,
+      POR_PAGINA,
+      controller.signal,
+    )
       .then((r) => {
         if (controller.signal.aborted) return;
         setLogs(r?.logs ?? []);
@@ -158,7 +168,7 @@ export default function AuditoriaAdmin() {
   const cor = (l: AuditLog) =>
     ehDestrutiva(l) ? "text-red-500" : "text-white";
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0d0d0d] text-white md:flex">
+    <div className="min-h-screen overflow-x-clip bg-[#0d0d0d] text-white md:flex">
       <AdminSidebar />
 
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
@@ -201,7 +211,9 @@ export default function AuditoriaAdmin() {
               type="date"
               value={campos.inicio}
               max={campos.fim || undefined}
-              onChange={(event) => setCampos({ ...campos, inicio: event.target.value })}
+              onChange={(event) =>
+                setCampos({ ...campos, inicio: event.target.value })
+              }
             />
           </label>
           <label className="space-y-1 text-sm text-gray-300">
@@ -211,7 +223,9 @@ export default function AuditoriaAdmin() {
               type="date"
               value={campos.fim}
               min={campos.inicio || undefined}
-              onChange={(event) => setCampos({ ...campos, fim: event.target.value })}
+              onChange={(event) =>
+                setCampos({ ...campos, fim: event.target.value })
+              }
             />
           </label>
           <label className="space-y-1 text-sm text-gray-300">
@@ -222,7 +236,9 @@ export default function AuditoriaAdmin() {
               pattern="[1-9][0-9]*"
               maxLength={10}
               value={campos.usuario}
-              onChange={(event) => setCampos({ ...campos, usuario: event.target.value })}
+              onChange={(event) =>
+                setCampos({ ...campos, usuario: event.target.value })
+              }
             />
           </label>
           <label className="space-y-1 text-sm text-gray-300">
@@ -232,7 +248,9 @@ export default function AuditoriaAdmin() {
               list="acoes-auditoria"
               maxLength={80}
               value={campos.acao}
-              onChange={(event) => setCampos({ ...campos, acao: event.target.value })}
+              onChange={(event) =>
+                setCampos({ ...campos, acao: event.target.value })
+              }
             />
             <datalist id="acoes-auditoria">
               {Object.entries(ACOES).map(([codigo, texto]) => (
@@ -265,14 +283,21 @@ export default function AuditoriaAdmin() {
             className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
             {erro}
-            <button type="button" className="ml-3 underline" onClick={() => carregar(filtros, pagina)}>
+            <button
+              type="button"
+              className="ml-3 underline"
+              onClick={() => carregar(filtros, pagina)}
+            >
               Tentar novamente
             </button>
           </div>
         )}
 
         {erroExportacao && (
-          <p role="alert" className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <p
+            role="alert"
+            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             Falha ao exportar: {erroExportacao}
           </p>
         )}
@@ -328,7 +353,10 @@ export default function AuditoriaAdmin() {
                           {alvo(l.details)}
                         </span>
                         {l.requestId && (
-                          <span title={l.requestId} className="block truncate text-xs text-gray-400">
+                          <span
+                            title={l.requestId}
+                            className="block truncate text-xs text-gray-400"
+                          >
                             Requisição {l.requestId}
                           </span>
                         )}
