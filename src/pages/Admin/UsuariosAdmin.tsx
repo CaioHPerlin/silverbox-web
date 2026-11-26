@@ -8,6 +8,7 @@ import { useUsuario } from "../../hooks/useUsuario";
 import {
   criarUsuario,
   editarUsuario,
+  gbParaBytes,
   listarUsuarios,
   mensagemAdmin,
   paraBytes,
@@ -155,7 +156,7 @@ function EditarForm({
   onClose: () => void;
   onSalvo: () => void;
 }) {
-  const [nome, setNome] = useState(usuario.name);
+  
   const [cotaGb, setCotaGb] = useState(
     String(+(paraBytes(usuario.quotaLimitBytes) / 1024 ** 3).toFixed(2)),
   );
@@ -163,27 +164,29 @@ function EditarForm({
   const [salvando, setSalvando] = useState(false);
 
   async function enviar(e: React.FormEvent) {
-    e.preventDefault();
-    const gb = Number(cotaGb.replace(",", "."));
-    if (!nome.trim()) return setErro("Informe o nome.");
-    if (!Number.isFinite(gb) || gb <= 0) return setErro("Informe uma cota maior que zero.");
+  e.preventDefault();
+  const gb = Number(cotaGb.replace(",", "."));
 
-    setSalvando(true);
-    setErro(null);
-    try {
-      await editarUsuario(usuario.id, {
-        //name: nome.trim(),
-        quotaLimitBytes: String(Math.round(gb * 1024 ** 3)),
-      });
-    } catch (err) {
-      setSalvando(false);
-      setErro(mensagemAdmin(err));
-      return;
-    }
-    setSalvando(false);
-    onSalvo();
-    onClose();
+  let bytes = "";
+  try {
+    bytes = gbParaBytes(gb);
+  } catch {
+    return setErro("Informe uma cota válida, maior que zero.");
   }
+
+  setSalvando(true);
+  setErro(null);
+  try {
+    await editarUsuario(usuario.id, { quotaLimitBytes: bytes });
+  } catch (err) {
+    setSalvando(false);
+    setErro(mensagemAdmin(err));
+    return;
+  }
+  setSalvando(false);
+  onSalvo();
+  onClose();
+}
 
   return (
     <div
@@ -204,10 +207,7 @@ function EditarForm({
             {erro}
           </div>
         )}
-        <label className="block text-xs text-gray-400">
-          Nome
-          <input className={`${campo} mt-1`} value={nome} onChange={(e) => setNome(e.target.value)} required />
-        </label>
+        
         <label className="block text-xs text-gray-400">
           Cota (GB)
           <input
@@ -344,7 +344,7 @@ export default function UsuariosAdmin() {
           onClick={() => setEditando(u)}
           className="rounded-md p-1.5 text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
           aria-label={`Editar ${u.email}`}
-          title="Editar nome e cota"
+          title="Editar cota"
         >
           <Pencil className="h-4 w-4" />
         </button>
