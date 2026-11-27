@@ -5,16 +5,17 @@ import { paymentMethodLabels } from "../../lib/billing";
 import { planUrl } from "../../lib/pricing";
 import { ApiError } from "../../services/apiClient";
 import { startCheckout } from "../../services/billing";
-import type { PaidPlanSelection, PaymentMethod } from "../../types/billing";
+import type { BillingEnvironment, PaidPlanSelection, PaymentMethod } from "../../types/billing";
 
 interface CheckoutFormProps {
+  billingEnvironment: BillingEnvironment;
   buyerId: string;
   selection: PaidPlanSelection;
   methods: readonly PaymentMethod[];
   onCreated: (purchaseId: string) => void;
 }
 
-export default function CheckoutForm({ buyerId, selection, methods, onCreated }: CheckoutFormProps) {
+export default function CheckoutForm({ billingEnvironment, buyerId, selection, methods, onCreated }: CheckoutFormProps) {
   const methodId = useId();
   const cpfId = useId();
   const [method, setMethod] = useState<PaymentMethod>(methods[0]);
@@ -29,7 +30,8 @@ export default function CheckoutForm({ buyerId, selection, methods, onCreated }:
     event.preventDefault();
     if (activeRequest.current) return;
     const request = new AbortController();
-    const storageKey = `silverbox:checkout:${buyerId}:${selection.planCode}:${selection.cycle}:${selection.seats}:${method}`;
+    const checkoutKey = billingEnvironment === "production" ? "silverbox:checkout:production" : "silverbox:checkout";
+    const storageKey = `${checkoutKey}:${buyerId}:${selection.planCode}:${selection.cycle}:${selection.seats}:${method}`;
     activeRequest.current = request;
     setError(undefined);
     setSubmitting(true);
@@ -39,7 +41,12 @@ export default function CheckoutForm({ buyerId, selection, methods, onCreated }:
       const key = sessionStorage.getItem(storageKey) ?? crypto.randomUUID();
       sessionStorage.setItem(storageKey, key);
       const cpf = method === "credit_card" ? "" : payerCpf.trim();
-      const purchase = await startCheckout({ ...selection, method, ...(cpf ? { payerCpf: cpf } : {}) }, key, request.signal);
+      const purchase = await startCheckout({
+        ...selection,
+        method,
+        ...(billingEnvironment === "production" ? { billingEnvironment } : {}),
+        ...(cpf ? { payerCpf: cpf } : {}),
+      }, key, request.signal);
       if (request.signal.aborted) return;
       sessionStorage.removeItem(storageKey);
       onCreated(purchase.id);
@@ -61,7 +68,7 @@ export default function CheckoutForm({ buyerId, selection, methods, onCreated }:
       </div>
       {method !== "credit_card" && (
         <div>
-          <label htmlFor={cpfId} className="mb-2 block text-sm font-medium">CPF de homologação</label>
+          <label htmlFor={cpfId} className="mb-2 block text-sm font-medium">{billingEnvironment === "sandbox" ? "CPF de homologação" : "CPF do pagador"}</label>
           <input id={cpfId} value={payerCpf} onChange={(event) => setPayerCpf(event.currentTarget.value)} disabled={submitting} inputMode="numeric" autoComplete="off" maxLength={14} placeholder="000.000.000-00" aria-describedby={`${cpfId}-help`} className="min-h-11 w-full rounded-lg border border-white/15 bg-zinc-950 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-400" />
           <p id={`${cpfId}-help`} className="mt-2 text-xs leading-5 text-zinc-400">Informe na primeira compra por Pix ou boleto desta conta.</p>
         </div>

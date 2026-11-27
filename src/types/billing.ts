@@ -1,6 +1,8 @@
 export type PlanCode = "free" | "pro" | "team" | "business";
 export type BillingCycle = "month" | "year";
 export type PaymentMethod = "credit_card" | "pix" | "boleto";
+export type BillingEnvironment = "sandbox" | "production";
+export type BillingMode = "disabled" | BillingEnvironment;
 
 export interface PricingPlan {
   code: PlanCode;
@@ -25,6 +27,7 @@ export interface PricingPlan {
 
 export interface PlanCatalog {
   currency: "BRL";
+  billingMode: BillingMode;
   paymentMethods: PaymentMethod[];
   plans: PricingPlan[];
 }
@@ -41,6 +44,7 @@ export interface PaidPlanSelection extends PlanSelection {
 
 export interface CheckoutSelection extends PaidPlanSelection {
   method: PaymentMethod;
+  billingEnvironment?: BillingEnvironment;
   payerCpf?: string;
 }
 
@@ -50,6 +54,7 @@ export type PurchaseStatus =
 
 interface PurchaseBase extends PaidPlanSelection {
   id: string;
+  environment?: BillingEnvironment;
   currency: "BRL";
   amountCents: number;
   status: PurchaseStatus;
