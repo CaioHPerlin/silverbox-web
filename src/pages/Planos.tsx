@@ -21,9 +21,11 @@ export default function Planos() {
   const buyerId = session ? String(session.user.id) : null;
   const catalog = useAsyncData<PlanCatalog | null>(getPlanCatalog, null);
   const plans = catalog.value?.plans ?? PLANS;
+  const billingMode = catalog.value?.billingMode ?? "disabled";
   const paymentMethods = catalog.value?.paymentMethods ?? [];
   const checkoutEnabled =
-    paymentMethods.length > 0 && plans.some((plan) => plan.checkoutEnabled);
+    billingMode !== "disabled" && paymentMethods.length > 0 &&
+    plans.some((plan) => plan.checkoutEnabled);
   const selection = readPlanSelection(searchParams.toString(), plans);
   const selectedPlan = plans.find((plan) => plan.code === selection?.planCode);
   const purchaseId = readPurchaseId(searchParams.get("purchaseId"));
@@ -207,10 +209,9 @@ export default function Planos() {
             ))}
           </div>
           <p className="mt-6 max-w-3xl text-xs leading-6 text-zinc-500">
-            Os valores e recursos dos planos pagos estão sujeitos à confirmação
-            no lançamento. A contratação paga ainda não está disponível. Nos
-            planos de equipe propostos, o espaço é compartilhado e a cobrança é
-            por pessoa.
+            {checkoutEnabled && billingMode === "production"
+              ? "O pagamento é avulso e cobre todo o ciclo selecionado. Os planos de equipe estão previstos para uma próxima etapa."
+              : "Os valores e recursos dos planos pagos estão sujeitos à confirmação no lançamento. A contratação paga ainda não está disponível. Nos planos de equipe propostos, o espaço é compartilhado e a cobrança é por pessoa."}
           </p>
         </section>
 
@@ -267,7 +268,9 @@ export default function Planos() {
             selection={selection}
             buyerId={buyerId}
             sessionPending={sessionPending}
+            catalogLoading={catalog.loading}
             paymentMethods={paymentMethods}
+            billingMode={billingMode}
             onCreated={trackPurchase}
             onClose={closeSummary}
           />

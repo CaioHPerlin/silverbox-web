@@ -17,6 +17,9 @@ export default function PlanCard({ plan, cycle, onSelect }: PlanCardProps) {
   const Icon = icons[plan.code];
   const paid = plan.monthlyPriceCents > 0;
   const comingSoon = plan.status === "coming-soon";
+  const paidPeriod = cycle === "year"
+    ? `${formatMoney(plan.yearlyPriceCents)}/ano${plan.perSeat ? " por pessoa" : ""}`
+    : "Pagamento avulso mensal";
 
   return (
     <article className={`relative flex min-w-0 flex-col rounded-2xl border p-6 ${plan.featured ? "border-blue-400/60 bg-blue-500/5" : "border-white/10 bg-white/[0.025]"}`}>
@@ -35,7 +38,9 @@ export default function PlanCard({ plan, cycle, onSelect }: PlanCardProps) {
         <p><span className="text-3xl font-semibold tracking-tight">{paid ? formatMoney(monthlyEquivalent(plan, cycle)) : "Grátis"}</span>
           {paid && <span className="ml-1 text-xs text-zinc-400">/mês{plan.perSeat ? " por pessoa" : ""}</span>}</p>
         <p className="mt-2 text-xs leading-5 text-zinc-400">
-          {!paid ? "Sem cartão para começar." : cycle === "year" ? `${formatMoney(plan.yearlyPriceCents)}/ano${plan.perSeat ? " por pessoa" : ""}, no lançamento.` : "Preço proposto para o lançamento."}
+          {!paid ? "Sem cartão para começar." : comingSoon && cycle === "month"
+            ? "Preço proposto para o lançamento."
+            : `${paidPeriod}${comingSoon ? ", no lançamento" : ""}.`}
         </p>
       </div>
 

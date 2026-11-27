@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { authUrl } from "../../lib/authNavigation";
-import { paymentMethodLabels, sandboxPaymentUrl } from "../../lib/billing";
+import { asaasPaymentUrl, paymentMethodLabels } from "../../lib/billing";
 import { formatMoney } from "../../lib/pricing";
 import { ApiError } from "../../services/apiClient";
 import { getPurchase } from "../../services/billing";
@@ -72,18 +72,20 @@ function PurchaseInstructions({ purchase }: { purchase: PlanPurchase }) {
     );
   }
 
-  const url = sandboxPaymentUrl(paymentInstructions.url);
+  const environment = purchase.environment ?? "sandbox";
+  const url = asaasPaymentUrl(paymentInstructions.url, environment);
   if (!url) return <p role="alert" className="text-sm text-red-300">O endereço do pagamento está indisponível.</p>;
+  const provider = environment === "sandbox" ? "Asaas Sandbox" : "Asaas";
 
   if (method === "credit_card") {
-    return <a href={url} className={paymentLinkClassName}>Abrir checkout no Asaas Sandbox</a>;
+    return <a href={url} className={paymentLinkClassName}>Abrir checkout no {provider}</a>;
   }
 
   return (
     <div className="space-y-4">
       <PaymentCode label="Linha digitável" value={paymentInstructions.digitableLine} />
       <p className="text-xs text-zinc-400">Vencimento {new Date(`${paymentInstructions.dueDate}T00:00:00`).toLocaleDateString("pt-BR")}.</p>
-      <a href={url} className={paymentLinkClassName} target="_blank" rel="noopener noreferrer">Abrir boleto no Asaas Sandbox</a>
+      <a href={url} className={paymentLinkClassName} target="_blank" rel="noopener noreferrer">Abrir boleto no {provider}</a>
     </div>
   );
 }

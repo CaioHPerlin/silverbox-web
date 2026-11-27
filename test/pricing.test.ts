@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PLANS } from "../src/data/plans.ts";
 import { authUrl, safeReturnTo } from "../src/lib/authNavigation.ts";
-import { readPurchaseId, sandboxPaymentUrl } from "../src/lib/billing.ts";
+import { asaasPaymentUrl, readPurchaseId } from "../src/lib/billing.ts";
 import { monthlyEquivalent, normalizeSeats, planUrl, readPlanSelection, totalPrice } from "../src/lib/pricing.ts";
 
 test("escolha de equipe e ciclo sobrevivem à navegação de autenticação", () => {
@@ -51,15 +51,21 @@ test("catálogo disponível corresponde à cota padrão e não habilita cobranç
   assert.equal(PLANS[0].monthlyPriceCents, 0);
 });
 
-test("rastreamento usa um ID de compra e aceita links apenas do Asaas Sandbox", () => {
+test("rastreamento usa um ID de compra e valida o ambiente dos links do Asaas", () => {
   const id = "6c68744e-6ef3-4fab-b00c-4a1fb3f978d2";
   const returnTo = `/planos?purchaseId=${id}&checkout=success`;
   const login = new URL(authUrl("login", returnTo), "https://silverbox.test");
   assert.equal(safeReturnTo(login.searchParams.get("returnTo")), returnTo);
   assert.equal(readPurchaseId(id), id);
   assert.equal(readPurchaseId("../compra"), null);
-  assert.equal(sandboxPaymentUrl("https://sandbox.asaas.com/checkoutSession/show/checkout_test"), "https://sandbox.asaas.com/checkoutSession/show/checkout_test");
+  assert.equal(asaasPaymentUrl("https://sandbox.asaas.com/checkoutSession/show/checkout_test", "sandbox"), "https://sandbox.asaas.com/checkoutSession/show/checkout_test");
   for (const url of ["http://sandbox.asaas.com/b/pdf/test", "https://asaas.com/b/pdf/test", "https://sandbox.asaas.com@other.test/", "javascript:alert(1)"]) {
-    assert.equal(sandboxPaymentUrl(url), null);
+    assert.equal(asaasPaymentUrl(url, "sandbox"), null);
   }
+  const productionCheckout = "https://asaas.com/checkoutSession/show?id=checkout_test";
+  const productionSlip = "https://www.asaas.com/000/b/pdf/pay_test";
+  assert.equal(asaasPaymentUrl(productionCheckout, "production"), productionCheckout);
+  assert.equal(asaasPaymentUrl(productionSlip, "production"), productionSlip);
+  assert.equal(asaasPaymentUrl("https://sandbox.asaas.com/checkoutSession/show/checkout_test", "production"), null);
+  assert.equal(asaasPaymentUrl("https://asaas.com.other.test/checkoutSession/show?id=checkout_test", "production"), null);
 });
