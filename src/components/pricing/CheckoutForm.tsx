@@ -79,7 +79,7 @@ export default function CheckoutForm({ billingEnvironment, buyerId, selection, m
         <p role="alert" className="text-sm text-red-300">{error instanceof ApiError ? error.message : "Falha ao enviar a compra. Tente novamente para recuperar a mesma tentativa."}</p>
       )}
       <button type="submit" disabled={submitting} className="min-h-11 w-full rounded-lg bg-blue-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-blue-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 disabled:opacity-50">
-        {submitting ? "Criando cobrança…" : "Gerar cobrança"}
+        {submitting ? "Criando cobrança…" : "Contratar plano"}
       </button>
     </form>
   );

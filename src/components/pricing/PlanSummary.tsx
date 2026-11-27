@@ -31,7 +31,7 @@ export default function PlanSummary({
     : paid
       ? checkingAvailability ? undefined : "A contratação deste plano está indisponível no momento."
       : "Organize seus arquivos e compartilhe por link. Crie sua conta sem cartão.";
-  const actionClassName = "flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400";
+  const actionClassName = "flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-blue-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-400 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-400";
 
   return (
     <PricingDialog title={`Plano ${plan.name}`} description={description} onClose={onClose}>
@@ -46,14 +46,16 @@ export default function PlanSummary({
           <CheckoutForm key={`${billingMode}:${buyerId}:${paymentMethods.join(",")}`} billingEnvironment={billingMode} buyerId={buyerId} selection={{ ...selection, planCode }} methods={paymentMethods} onCreated={onCreated} />
         ) : (
           <>
-            <Link to={authUrl("login", returnTo)} className={actionClassName}>Entrar para continuar</Link>
+            <p className="mb-4 text-sm text-zinc-400">Entre na sua conta para escolher a forma de pagamento.</p>
+            <Link to={authUrl("login", returnTo)} className={actionClassName}>Contratar plano</Link>
             <p className="mt-4 text-center text-sm"><Link to={authUrl("cadastro", returnTo)} className="text-blue-400 hover:underline">Criar conta</Link></p>
           </>
         )
       ) : paid ? (
         <>
           {checkingAvailability && <p role="status" className="mb-4 text-sm text-zinc-400">Consultando a disponibilidade do checkout…</p>}
-          <button type="button" className={actionClassName} onClick={onClose}>Voltar aos planos</button>
+          <button type="button" className={actionClassName} disabled>Contratar plano</button>
+          <button type="button" className="mt-4 block min-h-11 w-full text-sm font-medium text-blue-400 hover:underline focus-visible:outline-2 focus-visible:outline-blue-400" onClick={onClose}>Voltar aos planos</button>
         </>
       ) : (
         <>
