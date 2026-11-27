@@ -268,6 +268,7 @@ export default function Planos() {
             selection={selection}
             buyerId={buyerId}
             sessionPending={sessionPending}
+            catalogLoading={catalog.loading}
             paymentMethods={paymentMethods}
             billingMode={billingMode}
             onCreated={trackPurchase}
